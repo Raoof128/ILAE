@@ -9,9 +9,9 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from ..models import HREvent, LifecycleEvent, WorkflowResult
-from ..workflows import JoinerWorkflow
-from ..engine import PolicyMapper, StateManager
+from jml_engine.models import HREvent, LifecycleEvent, WorkflowResult
+from jml_engine.workflows import JoinerWorkflow
+from jml_engine.engine import PolicyMapper, StateManager
 
 
 class TestJoinerWorkflow:

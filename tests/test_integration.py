@@ -11,11 +11,11 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from ..models import HREvent, LifecycleEvent, AuditRecord
-from ..ingestion import HREventListener
-from ..workflows import JoinerWorkflow
-from ..engine import PolicyMapper, StateManager
-from ..audit import AuditLogger, EvidenceStore
+from jml_engine.models import HREvent, LifecycleEvent, AuditRecord
+from jml_engine.ingestion import HREventListener
+from jml_engine.workflows import JoinerWorkflow
+from jml_engine.engine import PolicyMapper, StateManager
+from jml_engine.audit import AuditLogger, EvidenceStore
 from fastapi.testclient import TestClient
 
 
@@ -177,7 +177,7 @@ class TestAPIIntegration:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
-        from ..api.server import app
+        from jml_engine.api.server import app
         return TestClient(app)
 
     def test_health_endpoint(self, client):
@@ -236,7 +236,7 @@ class TestAuditCompliance:
 
     def test_audit_evidence_generation(self, temp_audit_dir):
         """Test audit evidence generation and storage."""
-        from ..models import AuditRecord
+        from jml_engine.models import AuditRecord
 
         audit_logger = AuditLogger(str(temp_audit_dir))
         evidence_store = EvidenceStore(str(temp_audit_dir / "evidence"))
@@ -267,7 +267,7 @@ class TestAuditCompliance:
 
     def test_evidence_integrity(self, temp_audit_dir):
         """Test evidence integrity verification."""
-        from ..audit.evidence_store import EvidenceStore
+        from jml_engine.audit.evidence_store import EvidenceStore
 
         store = EvidenceStore(str(temp_audit_dir))
 
@@ -337,7 +337,7 @@ class TestStateManagement:
 
     def test_state_persistence(self, temp_state_file):
         """Test state persistence across sessions."""
-        from ..models import UserIdentity, UserStatus
+        from jml_engine.models import UserIdentity, UserStatus
 
         # Create state manager
         state_mgr = StateManager(temp_state_file)

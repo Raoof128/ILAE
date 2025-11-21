@@ -9,8 +9,8 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from ..models import HREvent, LifecycleEvent, WorkflowResult
-from ..workflows import MoverWorkflow
+from jml_engine.models import HREvent, LifecycleEvent, WorkflowResult
+from jml_engine.workflows import MoverWorkflow
 
 
 class TestMoverWorkflow:
