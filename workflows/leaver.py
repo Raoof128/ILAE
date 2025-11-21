@@ -128,6 +128,7 @@ class LeaverWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="revoke",
                 system=entitlement.system,
                 action=operation,
@@ -155,6 +156,7 @@ class LeaverWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="deprovision",
                 system=system,
                 action="delete_user",

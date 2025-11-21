@@ -86,14 +86,15 @@ class TestMoverWorkflow:
             name="John Doe",
             email="john.doe@company.com",
             department="Engineering",
-            title="Software Engineer"
+            title="Software Engineer",
+            source_system="TEST"
         )
 
         with pytest.raises(ValueError, match="Mover workflow can only process ROLE_CHANGE/DEPARTMENT_CHANGE events"):
             workflow.execute(invalid_event)
 
-    @patch('jml_engine.workflows.mover.PolicyMapper')
-    @patch('jml_engine.workflows.mover.StateManager')
+    @patch('jml_engine.workflows.base_workflow.PolicyMapper')
+    @patch('jml_engine.workflows.base_workflow.StateManager')
     def test_successful_role_change(self, mock_state_manager, mock_policy_mapper,
                                   workflow, role_change_event):
         """Test successful execution of role change workflow."""

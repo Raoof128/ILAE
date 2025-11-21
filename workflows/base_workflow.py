@@ -14,10 +14,7 @@ import uuid
 from ..models import HREvent, UserIdentity, WorkflowResult, AccessEntitlement, AuditRecord
 from ..engine.policy_mapper import PolicyMapper
 from ..engine.state_manager import StateManager
-from ..connectors import (
-    AWSConnector, AzureConnector, GitHubConnector,
-    GoogleConnector, SlackConnector, ConnectorResult
-)
+from ..connectors import ConnectorResult, _get_connector_class
 from ..audit.audit_logger import AuditLogger
 
 logger = logging.getLogger(__name__)
@@ -98,28 +95,14 @@ class BaseWorkflow(ABC):
         """Initialize all system connectors."""
         connectors_config = self.config.get('connectors', {})
 
-        connectors = {
-            'aws': AWSConnector(
-                connectors_config.get('aws'),
-                mock_mode=self.config.get('mock_mode', True)
-            ),
-            'azure': AzureConnector(
-                connectors_config.get('azure'),
-                mock_mode=self.config.get('mock_mode', True)
-            ),
-            'github': GitHubConnector(
-                connectors_config.get('github'),
-                mock_mode=self.config.get('mock_mode', True)
-            ),
-            'google': GoogleConnector(
-                connectors_config.get('google'),
-                mock_mode=self.config.get('mock_mode', True)
-            ),
-            'slack': SlackConnector(
-                connectors_config.get('slack'),
-                mock_mode=self.config.get('mock_mode', True)
+        connectors = {}
+        mock_mode = self.config.get('mock_mode', True)
+        for system in ['aws', 'azure', 'github', 'google', 'slack']:
+            connector_class = _get_connector_class(system, mock=mock_mode)
+            connectors[system] = connector_class(
+                connectors_config.get(system),
+                mock_mode=mock_mode
             )
-        }
 
         return connectors
 
@@ -231,8 +214,18 @@ class BaseWorkflow(ABC):
         """
         entitlements = []
 
+        # Helper function to safely iterate over profile attributes
+        def safe_iterate(attr_value):
+            """Safely iterate over an attribute that might be a Mock object."""
+            if hasattr(attr_value, '__iter__') and not isinstance(attr_value, (str, bytes)):
+                try:
+                    return list(attr_value)
+                except (TypeError, AttributeError):
+                    return []
+            return []
+
         # AWS roles
-        for role in profile.aws_roles:
+        for role in safe_iterate(profile.aws_roles):
             entitlements.append(AccessEntitlement(
                 system="aws",
                 resource_type="role",
@@ -241,7 +234,7 @@ class BaseWorkflow(ABC):
             ))
 
         # Azure groups
-        for group in profile.azure_groups:
+        for group in safe_iterate(profile.azure_groups):
             entitlements.append(AccessEntitlement(
                 system="azure",
                 resource_type="group",
@@ -250,7 +243,7 @@ class BaseWorkflow(ABC):
             ))
 
         # GitHub teams
-        for team in profile.github_teams:
+        for team in safe_iterate(profile.github_teams):
             entitlements.append(AccessEntitlement(
                 system="github",
                 resource_type="team",
@@ -259,7 +252,7 @@ class BaseWorkflow(ABC):
             ))
 
         # Google groups
-        for group in profile.google_groups:
+        for group in safe_iterate(profile.google_groups):
             entitlements.append(AccessEntitlement(
                 system="google",
                 resource_type="group",
@@ -268,7 +261,7 @@ class BaseWorkflow(ABC):
             ))
 
         # Slack channels
-        for channel in profile.slack_channels:
+        for channel in safe_iterate(profile.slack_channels):
             entitlements.append(AccessEntitlement(
                 system="slack",
                 resource_type="channel",
@@ -278,7 +271,7 @@ class BaseWorkflow(ABC):
 
         return entitlements
 
-    def _log_audit_event(self, employee_id: str, event_type: str, system: str,
+    def _log_audit_event(self, employee_id: str, user_email: str, event_type: str, system: str,
                         action: str, resource: str, success: bool, error: Optional[str] = None) -> str:
         """
         Log an audit event.
@@ -298,6 +291,7 @@ class BaseWorkflow(ABC):
         audit_record = AuditRecord(
             id=str(uuid.uuid4()),
             employee_id=employee_id,
+            user_email=user_email,
             event_type=event_type,
             system=system,
             action=action,

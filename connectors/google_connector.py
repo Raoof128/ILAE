@@ -7,12 +7,21 @@ for user account management, group memberships, and organizational units.
 
 import logging
 from typing import Dict, List, Optional, Any
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google.oauth2 import service_account
 
 from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+
+# Optional imports for Google API SDK
+try:
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    from google.oauth2 import service_account
+    GOOGLE_SDK_AVAILABLE = True
+except ImportError:
+    GOOGLE_SDK_AVAILABLE = False
+    build = None
+    HttpError = Exception
+    service_account = None
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +30,14 @@ class GoogleConnector(BaseConnector):
     """Google Workspace connector for managing users and groups."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, mock_mode: bool = False):
+        # Force mock mode if Google SDK is not available
+        if not GOOGLE_SDK_AVAILABLE:
+            mock_mode = True
+            logger.warning("Google SDK not available, using mock mode")
+
         super().__init__(config, mock_mode)
 
-        if not mock_mode:
+        if not mock_mode and GOOGLE_SDK_AVAILABLE:
             # Initialize Google API clients
             credentials_path = config.get('credentials_path') or config.get('service_account_file')
             if not credentials_path:

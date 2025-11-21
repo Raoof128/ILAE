@@ -122,6 +122,7 @@ class JoinerWorkflow(BaseWorkflow):
             # Log audit event
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="provision",
                 system=system,
                 action="create_user",
@@ -154,6 +155,7 @@ class JoinerWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="provision",
                 system="aws",
                 action="grant_role",
@@ -178,6 +180,7 @@ class JoinerWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="provision",
                 system="azure",
                 action="add_to_group",
@@ -202,6 +205,7 @@ class JoinerWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="provision",
                 system="github",
                 action="add_to_team",
@@ -226,6 +230,7 @@ class JoinerWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="provision",
                 system="google",
                 action="add_to_group",
@@ -250,6 +255,7 @@ class JoinerWorkflow(BaseWorkflow):
 
             self._log_audit_event(
                 employee_id=hr_event.employee_id,
+                user_email=hr_event.email,
                 event_type="provision",
                 system="slack",
                 action="add_to_channel",

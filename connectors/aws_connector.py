@@ -5,13 +5,21 @@ Provides integration with AWS Identity and Access Management (IAM) for
 user account management, role assignments, and access key management.
 """
 
-import boto3
 import logging
 from typing import Dict, List, Optional, Any
-from botocore.exceptions import ClientError
 
 from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+
+# Optional imports for AWS SDK
+try:
+    import boto3  # noqa: F401
+    from botocore.exceptions import ClientError  # noqa: F401
+    AWS_SDK_AVAILABLE = True
+except ImportError:
+    AWS_SDK_AVAILABLE = False
+    boto3 = None
+    ClientError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +28,14 @@ class AWSConnector(BaseConnector):
     """AWS IAM connector for managing users, roles, and policies."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, mock_mode: bool = False):
+        # Force mock mode if AWS SDK is not available
+        if not AWS_SDK_AVAILABLE:
+            mock_mode = True
+            logger.warning("AWS SDK not available, using mock mode")
+
         super().__init__(config, mock_mode)
 
-        if not mock_mode:
+        if not mock_mode and AWS_SDK_AVAILABLE:
             # Initialize AWS clients
             self.iam_client = boto3.client(
                 'iam',

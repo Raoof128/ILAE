@@ -66,14 +66,15 @@ class TestJoinerWorkflow:
             name="John Doe",
             email="john.doe@company.com",
             department="Engineering",
-            title="Software Engineer"
+            title="Software Engineer",
+            source_system="TEST"
         )
 
         with pytest.raises(ValueError, match="Joiner workflow can only process NEW_STARTER events"):
             workflow.execute(invalid_event)
 
-    @patch('jml_engine.workflows.joiner.PolicyMapper')
-    @patch('jml_engine.workflows.joiner.StateManager')
+    @patch('jml_engine.workflows.base_workflow.PolicyMapper')
+    @patch('jml_engine.workflows.base_workflow.StateManager')
     def test_successful_workflow_execution(self, mock_state_manager, mock_policy_mapper,
                                          workflow, sample_hr_event):
         """Test successful execution of joiner workflow."""
@@ -176,7 +177,8 @@ class TestJoinerWorkflow:
             name="",
             email="invalid-email",  # Invalid: no @ symbol
             department="Engineering",
-            title="Software Engineer"
+            title="Software Engineer",
+            source_system="TEST"
         )
 
         # This should not raise an exception in the workflow itself
@@ -201,7 +203,8 @@ class TestJoinerWorkflow:
             name="Test User",
             email="test@company.com",
             department=department,
-            title=title
+            title=title,
+            source_system="TEST"
         )
 
         # Test the policy resolution

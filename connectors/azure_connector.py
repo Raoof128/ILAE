@@ -7,12 +7,21 @@ for user account management, group memberships, and role assignments.
 
 import logging
 from typing import Dict, List, Optional, Any
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.authorization import AuthorizationManagementClient
-from azure.core.exceptions import HttpResponseError
 
 from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+
+# Optional imports for Azure SDK
+try:
+    from azure.identity import DefaultAzureCredential
+    from azure.mgmt.authorization import AuthorizationManagementClient
+    from azure.core.exceptions import HttpResponseError
+    AZURE_SDK_AVAILABLE = True
+except ImportError:
+    AZURE_SDK_AVAILABLE = False
+    DefaultAzureCredential = None
+    AuthorizationManagementClient = None
+    HttpResponseError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +30,14 @@ class AzureConnector(BaseConnector):
     """Azure Entra ID connector for managing users, groups, and roles."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, mock_mode: bool = False):
+        # Force mock mode if Azure SDK is not available
+        if not AZURE_SDK_AVAILABLE:
+            mock_mode = True
+            logger.warning("Azure SDK not available, using mock mode")
+
         super().__init__(config, mock_mode)
 
-        if not mock_mode:
+        if not mock_mode and AZURE_SDK_AVAILABLE:
             # Initialize Azure clients
             self.credential = DefaultAzureCredential()
             self.subscription_id = config.get('subscription_id')

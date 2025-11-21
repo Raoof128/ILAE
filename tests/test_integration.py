@@ -11,11 +11,10 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from ..models import HREvent, LifecycleEvent
+from ..models import HREvent, LifecycleEvent, AuditRecord
 from ..ingestion import HREventListener
 from ..workflows import JoinerWorkflow
 from ..engine import PolicyMapper, StateManager
-from ..api.server import app
 from ..audit import AuditLogger, EvidenceStore
 from fastapi.testclient import TestClient
 
@@ -62,7 +61,7 @@ class TestHREventProcessing:
 
         # Test JSON ingestion
         for event in sample_hr_events:
-            event_dict = event.dict()
+            event_dict = event.model_dump(mode='json')
             ingested_events = listener.ingest_event(event_dict)
 
             assert len(ingested_events) == 1
@@ -178,6 +177,7 @@ class TestAPIIntegration:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     def test_health_endpoint(self, client):
@@ -245,6 +245,7 @@ class TestAuditCompliance:
         audit_record = AuditRecord(
             id="test-audit-001",
             employee_id="TEST001",
+            user_email="test@example.com",
             event_type="provision",
             system="aws",
             action="create_user",
@@ -295,6 +296,7 @@ class TestAuditCompliance:
                 id=f"compliance-test-{i}",
                 timestamp=base_time - timedelta(hours=i),
                 employee_id=f"EMP{i:03d}",
+                user_email=f"emp{i:03d}@example.com",
                 event_type="provision",
                 system="aws",
                 action="create_user",
@@ -347,7 +349,8 @@ class TestStateManagement:
             name="State Test",
             email="state.test@company.com",
             department="Engineering",
-            title="Engineer"
+            title="Engineer",
+            source_system="TEST"
         )
 
         identity = state_mgr.create_or_update_identity(hr_event)

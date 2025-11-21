@@ -10,7 +10,6 @@ import json
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
-from ..api.server import app
 from ..models import HREvent, LifecycleEvent
 
 
@@ -20,6 +19,7 @@ class TestHealthEndpoints:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     def test_root_endpoint(self, client):
@@ -90,6 +90,7 @@ class TestHREventEndpoints:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     @pytest.fixture
@@ -175,6 +176,7 @@ class TestUserManagementEndpoints:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     def test_get_existing_user(self, client):
@@ -304,6 +306,7 @@ class TestAuditEndpoints:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     def test_audit_logs_access(self, client):
@@ -325,6 +328,7 @@ class TestSimulationEndpoints:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     @pytest.fixture
@@ -388,6 +392,7 @@ class TestErrorHandling:
     @pytest.fixture
     def client(self):
         """Test client for the FastAPI application."""
+        from ..api.server import app
         return TestClient(app)
 
     def test_malformed_json(self, client):

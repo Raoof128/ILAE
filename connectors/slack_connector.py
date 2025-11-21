@@ -7,11 +7,19 @@ channel access, and user management.
 
 import logging
 from typing import Dict, List, Optional, Any
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 
 from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+
+# Optional imports for Slack SDK
+try:
+    from slack_sdk import WebClient
+    from slack_sdk.errors import SlackApiError
+    SLACK_SDK_AVAILABLE = True
+except ImportError:
+    SLACK_SDK_AVAILABLE = False
+    WebClient = None
+    SlackApiError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +28,14 @@ class SlackConnector(BaseConnector):
     """Slack connector for managing workspace members and channels."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, mock_mode: bool = False):
+        # Force mock mode if Slack SDK is not available
+        if not SLACK_SDK_AVAILABLE:
+            mock_mode = True
+            logger.warning("Slack SDK not available, using mock mode")
+
         super().__init__(config, mock_mode)
 
-        if not mock_mode:
+        if not mock_mode and SLACK_SDK_AVAILABLE:
             token = config.get('slack_token') or config.get('token')
             if not token:
                 raise ValueError("Slack token is required for real mode")

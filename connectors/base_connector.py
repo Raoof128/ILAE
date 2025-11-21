@@ -187,8 +187,8 @@ class MockConnector(BaseConnector):
     without requiring real API access.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config, mock_mode=True)
+    def __init__(self, config: Optional[Dict[str, Any]] = None, mock_mode: bool = True):
+        super().__init__(config, mock_mode=mock_mode)
 
         # In-memory state for mock operations
         self.users: Dict[str, Dict[str, Any]] = {}

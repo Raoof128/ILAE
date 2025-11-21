@@ -7,13 +7,24 @@ team management, and repository access control.
 
 import logging
 from typing import Dict, List, Optional, Any
-from github import Github, GithubException
-from github.Organization import Organization
-from github.Team import Team
-from github.NamedUser import NamedUser
 
 from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+
+# Optional imports for GitHub SDK
+try:
+    from github import Github, GithubException
+    from github.Organization import Organization
+    from github.Team import Team
+    from github.NamedUser import NamedUser
+    GITHUB_SDK_AVAILABLE = True
+except ImportError:
+    GITHUB_SDK_AVAILABLE = False
+    Github = None
+    GithubException = Exception
+    Organization = None
+    Team = None
+    NamedUser = None
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +33,14 @@ class GitHubConnector(BaseConnector):
     """GitHub connector for managing organization members and teams."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, mock_mode: bool = False):
+        # Force mock mode if GitHub SDK is not available
+        if not GITHUB_SDK_AVAILABLE:
+            mock_mode = True
+            logger.warning("GitHub SDK not available, using mock mode")
+
         super().__init__(config, mock_mode)
 
-        if not mock_mode:
+        if not mock_mode and GITHUB_SDK_AVAILABLE:
             token = config.get('github_token') or config.get('token')
             if not token:
                 raise ValueError("GitHub token is required for real mode")
