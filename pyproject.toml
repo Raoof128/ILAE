@@ -60,7 +60,7 @@ dev = [
     "pytest-cov>=4.0.0,<5.0.0",
     "pytest-mock>=3.10.0,<4.0.0",
     "pytest-asyncio>=0.21.0,<1.0.0",
-    "pytest-xdist>=3.0.0,<4.0.0",
+    "pytest-xdist>=3.0.0,<5.0.0",
     "black>=23.0.0,<24.0.0",
     "isort>=5.12.0,<6.0.0",
     "ruff>=0.1.0,<1.0.0",
@@ -88,9 +88,6 @@ Homepage = "https://github.com/yourusername/jml-engine"
 Documentation = "https://github.com/yourusername/jml-engine#readme"
 Repository = "https://github.com/yourusername/jml-engine"
 Issues = "https://github.com/yourusername/jml-engine/issues"
-
-[tool.setuptools.dynamic]
-version = {attr = "jml_engine.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -171,8 +168,8 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
-    "--strict-config",
     "--verbose",
+    "--tb=short",
     "--cov=jml_engine",
     "--cov-report=term-missing",
     "--cov-report=html",

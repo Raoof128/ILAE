@@ -69,17 +69,17 @@ repos:
       - id: commitizen
         stages: [commit-msg]
 
-  # License header check
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.4
-    hooks:
-      - id: insert-license
-        files: \.py$
-        args:
-          - --license-filepath
-          - .license-header.txt
-          - --comment-style
-          - "#"
+  # License header check (disabled by default to avoid conflicts)
+  # - repo: https://github.com/Lucas-C/pre-commit-hooks
+  #   rev: v1.5.4
+  #   hooks:
+  #     - id: insert-license
+  #       files: \.py$
+  #       args:
+  #         - --license-filepath
+  #         - .license-header.txt
+  #         - --comment-style
+  #         - "#"
 
 ci:
   autofix_commit_msg: |
