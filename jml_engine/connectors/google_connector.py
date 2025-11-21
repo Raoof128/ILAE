@@ -6,16 +6,16 @@ for user account management, group memberships, and organizational units.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+from .base_connector import BaseConnector, ConnectorResult, MockConnector
 
 # Optional imports for Google API SDK
 try:
+    from google.oauth2 import service_account
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
-    from google.oauth2 import service_account
     GOOGLE_SDK_AVAILABLE = True
 except ImportError:
     GOOGLE_SDK_AVAILABLE = False

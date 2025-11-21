@@ -6,14 +6,14 @@ This script performs comprehensive health checks on all JML Engine components
 and reports system status, performance metrics, and potential issues.
 """
 
+import json
+import logging
 import sys
 import time
+from datetime import datetime, timezone
+from typing import Any, Dict
+
 import requests
-import json
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,7 +33,7 @@ class HealthChecker:
         logger.info("Starting comprehensive health check...")
 
         self.results = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "overall_status": "unknown",
             "checks": {},
             "metrics": {},
@@ -169,7 +169,7 @@ class HealthChecker:
 
         try:
             # Make multiple requests to check performance
-            for i in range(5):
+            for _ in range(5):
                 requests.get(f"{self.api_url}/health", timeout=5)
 
             end_time = time.time()

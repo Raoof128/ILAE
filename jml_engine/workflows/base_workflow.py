@@ -6,16 +6,16 @@ with common functionality for executing IAM operations across multiple systems.
 """
 
 import logging
-from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any
-from datetime import datetime
 import uuid
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from ..models import HREvent, UserIdentity, WorkflowResult, AccessEntitlement, AuditRecord
+from ..audit.audit_logger import AuditLogger
+from ..connectors import ConnectorResult, _get_connector_class
 from ..engine.policy_mapper import PolicyMapper
 from ..engine.state_manager import StateManager
-from ..connectors import ConnectorResult, _get_connector_class
-from ..audit.audit_logger import AuditLogger
+from ..models import AccessEntitlement, AuditRecord, HREvent, UserIdentity, WorkflowResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ class WorkflowStep:
 
     def mark_success(self, result: Any = None):
         """Mark step as successful."""
-        self.executed_at = datetime.utcnow()
+        self.executed_at = datetime.now(timezone.utc)
         self.success = True
         self.result = result
 
     def mark_failure(self, error: str):
         """Mark step as failed."""
-        self.executed_at = datetime.utcnow()
+        self.executed_at = datetime.now(timezone.utc)
         self.success = False
         self.error = error
 

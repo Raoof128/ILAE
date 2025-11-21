@@ -6,11 +6,11 @@ by removing old permissions and adding new ones across all systems.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Set
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, List
 
+from ..models import AccessEntitlement, HREvent, LifecycleEvent, WorkflowResult
 from .base_workflow import BaseWorkflow, WorkflowStep
-from ..models import HREvent, WorkflowResult, LifecycleEvent, AccessEntitlement
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class MoverWorkflow(BaseWorkflow):
         if hr_event.event not in [LifecycleEvent.ROLE_CHANGE, LifecycleEvent.DEPARTMENT_CHANGE]:
             raise ValueError(f"Mover workflow can only process ROLE_CHANGE/DEPARTMENT_CHANGE events, got {hr_event.event}")
 
-        self.started_at = datetime.utcnow()
+        self.started_at = datetime.now(timezone.utc)
         logger.info(f"Starting mover workflow for employee {hr_event.employee_id}")
 
         try:
@@ -71,10 +71,10 @@ class MoverWorkflow(BaseWorkflow):
             current_identity.department = hr_event.department
             current_identity.title = hr_event.title
             current_identity.last_hr_event = hr_event
-            current_identity.updated_at = datetime.utcnow()
+            current_identity.updated_at = datetime.now(timezone.utc)
 
             # Mark workflow as completed
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
 
             # Create workflow result
             result = WorkflowResult(
@@ -93,7 +93,7 @@ class MoverWorkflow(BaseWorkflow):
 
         except Exception as e:
             logger.error(f"Mover workflow failed for {hr_event.employee_id}: {e}")
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
             self.errors.append(str(e))
 
             return WorkflowResult(
@@ -140,7 +140,7 @@ class MoverWorkflow(BaseWorkflow):
             Tuple of (entitlements_to_remove, entitlements_to_add)
         """
         # Convert profiles to entitlement sets for comparison
-        old_entitlements = set(self._profile_to_entitlements(old_profile, employee_id))
+        # old_entitlements = set(self._profile_to_entitlements(old_profile, employee_id))
         new_entitlements = set(self._profile_to_entitlements(new_profile, employee_id))
         current_entitlements_set = set(current_entitlements)
 
@@ -165,12 +165,16 @@ class MoverWorkflow(BaseWorkflow):
         for entitlement in entitlements_to_remove:
             operation = self._get_removal_operation(entitlement.resource_type)
 
+            # Determine parameter key based on operation
+            param_key = 'role_name' if 'role' in operation else 'group_name'
+
             step = WorkflowStep(
                 system=entitlement.system,
                 operation=operation,
                 resource=entitlement.resource_name,
                 parameters={
                     'user_id': hr_event.employee_id,
+                    param_key: entitlement.resource_name,
                     'resource_name': entitlement.resource_name
                 }
             )
@@ -200,12 +204,16 @@ class MoverWorkflow(BaseWorkflow):
         for entitlement in entitlements_to_add:
             operation = self._get_addition_operation(entitlement.resource_type)
 
+            # Determine parameter key based on operation
+            param_key = 'role_name' if 'role' in operation else 'group_name'
+
             step = WorkflowStep(
                 system=entitlement.system,
                 operation=operation,
                 resource=entitlement.resource_name,
                 parameters={
                     'user_id': hr_event.employee_id,
+                    param_key: entitlement.resource_name,
                     'resource_name': entitlement.resource_name
                 }
             )

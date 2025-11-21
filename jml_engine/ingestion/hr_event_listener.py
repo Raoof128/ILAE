@@ -6,14 +6,14 @@ and normalizing them into a standard format for processing by the workflow engin
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
-from .formats.base import HRFormatParser
-from .formats.workday import WorkdayParser
-from .formats.bamboo import BambooHRParser
-from .formats.csv_loader import CSVParser
 from ..models import HREvent
+from .formats.bamboo import BambooHRParser
+from .formats.base import HRFormatParser
+from .formats.csv_loader import CSVParser
+from .formats.workday import WorkdayParser
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class HREventListener:
         # Handle file paths
         if isinstance(data, Path):
             if data.suffix.lower() == '.csv':
-                with open(data, 'r', encoding='utf-8') as f:
+                with open(data, encoding='utf-8') as f:
                     content = f.read()
                 return self._parse_with_auto_detection(content)
             else:
@@ -90,7 +90,7 @@ class HREventListener:
             raise FileNotFoundError(f"CSV file not found: {file_path}")
 
         parser = CSVParser(column_mappings)
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             return parser.parse(f)
 
     def ingest_json_webhook(self, payload: Dict[str, Any]) -> List[HREvent]:
@@ -221,8 +221,8 @@ class HREventListener:
         event_type = data.get("event") or data.get("event_type") or "NEW_STARTER"
 
         try:
-            from .formats.base import HRFormatParser
-            parser = HRFormatParser()
+            # Use the first available parser for normalization logic
+            parser = self.parsers[0]
             event_enum = parser._normalize_event_type(event_type)
 
             return HREvent(

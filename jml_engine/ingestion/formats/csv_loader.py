@@ -8,11 +8,10 @@ Supports various CSV formats with flexible column mapping.
 import csv
 import io
 import logging
-from typing import List, Dict, Any, Optional, TextIO
-from datetime import datetime
+from typing import Any, Dict, List, Optional
 
+from ...models import HREvent
 from .base import HRFormatParser
-from ...models import HREvent, LifecycleEvent
 
 logger = logging.getLogger(__name__)
 

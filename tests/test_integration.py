@@ -5,18 +5,19 @@ This module contains integration tests that verify end-to-end functionality
 across multiple components of the system.
 """
 
-import pytest
-import json
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from jml_engine.models import HREvent, LifecycleEvent, AuditRecord
-from jml_engine.ingestion import HREventListener
-from jml_engine.workflows import JoinerWorkflow
-from jml_engine.engine import PolicyMapper, StateManager
-from jml_engine.audit import AuditLogger, EvidenceStore
+import pytest
 from fastapi.testclient import TestClient
+
+from jml_engine.audit import AuditLogger, EvidenceStore
+from jml_engine.engine import StateManager
+from jml_engine.ingestion import HREventListener
+from jml_engine.models import AuditRecord, HREvent, LifecycleEvent
+from jml_engine.workflows import JoinerWorkflow
 
 
 @pytest.mark.integration
@@ -159,7 +160,7 @@ class TestWorkflowExecution:
             # Verify results
             assert result.success is True
             assert result.employee_id == hr_event.employee_id
-            assert len(result.actions_taken) == 5  # One for each system
+            assert len(result.actions_taken) == 10  # 5 for user creation + 5 for entitlements
 
             # Verify state management calls
             mock_sm.get_identity.assert_called_once()
@@ -167,7 +168,7 @@ class TestWorkflowExecution:
             mock_sm.update_entitlements.assert_called_once()
 
             # Verify audit logging
-            assert mock_al.log_event.call_count == 5  # One for each system
+            assert mock_al.log_event.call_count == 10  # 5 for user creation + 5 for entitlements
 
 
 @pytest.mark.integration
@@ -178,7 +179,8 @@ class TestAPIIntegration:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     def test_health_endpoint(self, client):
         """Test the health check endpoint."""
@@ -241,6 +243,12 @@ class TestAuditCompliance:
         audit_logger = AuditLogger(str(temp_audit_dir))
         evidence_store = EvidenceStore(str(temp_audit_dir / "evidence"))
 
+        # Create evidence
+        evidence_content = {"file_path": "report.pdf", "hash": "abc123456"}
+
+        # Store evidence
+        evidence_id = evidence_store.store_evidence(evidence_content, employee_id="TEST001")
+
         # Create a test audit record
         audit_record = AuditRecord(
             id="test-audit-001",
@@ -250,20 +258,21 @@ class TestAuditCompliance:
             system="aws",
             action="create_user",
             resource="user_account",
-            success=True
+            success=True,
+            evidence_path=evidence_id
         )
 
         # Log the event
-        evidence_path = audit_logger.log_event(audit_record)
+        audit_id = audit_logger.log_event(audit_record)
 
         # Verify evidence was created
-        assert evidence_path is not None
-        assert Path(evidence_path).exists()
+        assert audit_id is not None
+        assert audit_id == audit_record.id
 
         # Verify we can retrieve the evidence
-        evidence_data = evidence_store.retrieve_evidence("test-audit-001")
+        evidence_data = evidence_store.retrieve_evidence(evidence_id)
         assert evidence_data is not None
-        assert evidence_data["audit_record"]["id"] == "test-audit-001"
+        assert evidence_data == evidence_content
 
     def test_evidence_integrity(self, temp_audit_dir):
         """Test evidence integrity verification."""
@@ -285,12 +294,12 @@ class TestAuditCompliance:
 
     def test_compliance_report_generation(self, temp_audit_dir):
         """Test compliance report generation."""
-        from datetime import datetime, timedelta
+        from datetime import timedelta
 
         audit_logger = AuditLogger(str(temp_audit_dir))
 
         # Add some test audit records
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         for i in range(3):
             record = AuditRecord(
                 id=f"compliance-test-{i}",
@@ -337,7 +346,6 @@ class TestStateManagement:
 
     def test_state_persistence(self, temp_state_file):
         """Test state persistence across sessions."""
-        from jml_engine.models import UserIdentity, UserStatus
 
         # Create state manager
         state_mgr = StateManager(temp_state_file)

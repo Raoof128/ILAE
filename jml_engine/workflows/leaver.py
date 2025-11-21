@@ -6,11 +6,11 @@ all access entitlements and deactivating accounts across all systems.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, List, Optional
 
+from ..models import HREvent, LifecycleEvent, WorkflowResult
 from .base_workflow import BaseWorkflow, WorkflowStep
-from ..models import HREvent, WorkflowResult, LifecycleEvent
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class LeaverWorkflow(BaseWorkflow):
         if hr_event.event not in [LifecycleEvent.TERMINATION, LifecycleEvent.CONTRACTOR_OFFBOARDING]:
             raise ValueError(f"Leaver workflow can only process TERMINATION/CONTRACTOR_OFFBOARDING events, got {hr_event.event}")
 
-        self.started_at = datetime.utcnow()
+        self.started_at = datetime.now(timezone.utc)
         logger.info(f"Starting leaver workflow for employee {hr_event.employee_id}")
 
         try:
@@ -54,7 +54,7 @@ class LeaverWorkflow(BaseWorkflow):
                 self.state_manager.deactivate_identity(hr_event.employee_id)
 
             # Mark workflow as completed
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
 
             # Create workflow result
             result = WorkflowResult(
@@ -73,7 +73,7 @@ class LeaverWorkflow(BaseWorkflow):
 
         except Exception as e:
             logger.error(f"Leaver workflow failed for {hr_event.employee_id}: {e}")
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
             self.errors.append(str(e))
 
             return WorkflowResult(

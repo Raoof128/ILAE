@@ -5,10 +5,10 @@ This module provides the foundation for parsing HR events from various
 sources like Workday, BambooHR, CSV files, and JSON webhooks.
 """
 
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any
-from datetime import datetime
 import logging
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+from typing import Any, List
 
 from ...models import HREvent, LifecycleEvent
 
@@ -103,7 +103,7 @@ class HRFormatParser(ABC):
             Parsed datetime object
         """
         if not date_str:
-            return datetime.utcnow()
+            return datetime.now(timezone.utc)
 
         # Try common date formats
         formats = [
@@ -122,4 +122,4 @@ class HRFormatParser(ABC):
                 continue
 
         logger.warning(f"Could not parse date: {date_str}, using current time")
-        return datetime.utcnow()
+        return datetime.now(timezone.utc)

@@ -6,11 +6,10 @@ Workday typically sends events in JSON format with specific field mappings.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import Any, Dict, List, Optional
 
+from ...models import HREvent
 from .base import HRFormatParser
-from ...models import HREvent, LifecycleEvent
 
 logger = logging.getLogger(__name__)
 

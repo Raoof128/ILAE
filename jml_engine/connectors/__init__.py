@@ -5,7 +5,8 @@ This package provides integrations with various IAM systems including
 AWS, Azure, GitHub, Google Workspace, and Slack.
 """
 
-from .base_connector import BaseConnector, MockConnector, ConnectorResult
+from .base_connector import BaseConnector, ConnectorResult, MockConnector
+
 
 # Lazy imports to avoid SDK dependencies during testing
 def _get_connector_class(system: str, mock: bool = False):

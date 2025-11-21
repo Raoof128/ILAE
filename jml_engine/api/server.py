@@ -6,23 +6,26 @@ audit retrieval, and system administration.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
+import uvicorn
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import uvicorn
 
-from ..models import HREvent, UserIdentity, AuditRecord, WorkflowResult
-from ..ingestion import HREventListener
-from ..workflows import (
-    JoinerWorkflow, MoverWorkflow, LeaverWorkflow,
-    determine_workflow_type, validate_hr_event
-)
-from ..engine import PolicyMapper, StateManager
 from ..audit import AuditLogger, EvidenceStore
+from ..engine import PolicyMapper, StateManager
+from ..ingestion import HREventListener
+from ..models import HREvent
+from ..workflows import (
+    JoinerWorkflow,
+    LeaverWorkflow,
+    MoverWorkflow,
+    determine_workflow_type,
+    validate_hr_event,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +158,7 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "components": {
             "hr_listener": hr_listener is not None,
             "policy_mapper": policy_mapper is not None,
@@ -205,11 +208,11 @@ async def process_hr_event(event_request: HREventRequest, background_tasks: Back
         background_tasks.add_task(execute_workflow_async, hr_event, workflow_type)
 
         return WorkflowResponse(
-            workflow_id=f"temp_{hr_event.employee_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+            workflow_id=f"temp_{hr_event.employee_id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
             employee_id=hr_event.employee_id,
             event_type=hr_event.event,
             status="accepted",
-            started_at=datetime.utcnow().isoformat(),
+            started_at=datetime.now(timezone.utc).isoformat(),
             completed_at=None,
             success=True,
             total_steps=0,
@@ -220,7 +223,7 @@ async def process_hr_event(event_request: HREventRequest, background_tasks: Back
 
     except Exception as e:
         logger.error(f"Error processing HR event: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/user/{employee_id}", response_model=UserResponse)
@@ -332,11 +335,11 @@ async def simulate_workflow(
         background_tasks.add_task(execute_workflow_async, hr_event, workflow_type, config)
 
         return WorkflowResponse(
-            workflow_id=f"sim_{workflow_type}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+            workflow_id=f"sim_{workflow_type}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
             employee_id=hr_event.employee_id,
             event_type=hr_event.event,
             status="simulation_started",
-            started_at=datetime.utcnow().isoformat(),
+            started_at=datetime.now(timezone.utc).isoformat(),
             completed_at=None,
             success=True,
             total_steps=0,
@@ -347,7 +350,7 @@ async def simulate_workflow(
 
     except Exception as e:
         logger.error(f"Error starting workflow simulation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/stats")
@@ -361,7 +364,7 @@ async def get_system_stats():
         evidence_stats = evidence_store.get_evidence_stats()
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "identities": identity_stats,
             "evidence": evidence_stats,
             "supported_formats": hr_listener.get_supported_formats() if hr_listener else []
@@ -369,7 +372,7 @@ async def get_system_stats():
 
     except Exception as e:
         logger.error(f"Error getting system stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def execute_workflow_async(hr_event: HREvent, workflow_type: str, config: Optional[Dict[str, Any]] = None):
@@ -399,9 +402,9 @@ async def execute_workflow_async(hr_event: HREvent, workflow_type: str, config: 
 def create_sample_hr_event(event_type: str) -> HREvent:
     """Create a sample HR event for simulation."""
     base_event = {
-        "employee_id": f"SAMPLE_{datetime.utcnow().strftime('%H%M%S')}",
+        "employee_id": f"SAMPLE_{datetime.now(timezone.utc).strftime('%H%M%S')}",
         "name": "Sample User",
-        "email": f"sample.{datetime.utcnow().strftime('%H%M%S')}@company.com",
+        "email": f"sample.{datetime.now(timezone.utc).strftime('%H%M%S')}@company.com",
         "department": "Engineering",
         "title": "Software Engineer",
         "source_system": "API_SIMULATION"

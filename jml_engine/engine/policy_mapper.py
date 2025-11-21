@@ -5,10 +5,11 @@ This module reads the access matrix and role mappings configuration files
 and provides methods to resolve user entitlements based on department and title.
 """
 
-import re
 import logging
+import re
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import List, Optional, Union
+
 import yaml
 
 from ..models import AccessProfile, HREvent
@@ -49,7 +50,7 @@ class PolicyMapper:
             # Load access matrix
             matrix_file = self.config_dir / "access_matrix.yaml"
             if matrix_file.exists():
-                with open(matrix_file, 'r', encoding='utf-8') as f:
+                with open(matrix_file, encoding='utf-8') as f:
                     self.access_matrix = yaml.safe_load(f)
                 logger.info(f"Loaded access matrix from {matrix_file}")
             else:
@@ -58,7 +59,7 @@ class PolicyMapper:
             # Load role mappings
             mappings_file = self.config_dir / "role_mappings.yaml"
             if mappings_file.exists():
-                with open(mappings_file, 'r', encoding='utf-8') as f:
+                with open(mappings_file, encoding='utf-8') as f:
                     self.role_mappings = yaml.safe_load(f)
                 logger.info(f"Loaded role mappings from {mappings_file}")
             else:
@@ -286,7 +287,7 @@ class PolicyMapper:
             if config.get("department") == department:
                 titles.add(title)
 
-        return sorted(list(titles))
+        return sorted(titles)
 
     def reload_config(self):
         """Reload configuration files (useful for dynamic updates)."""

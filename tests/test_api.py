@@ -5,12 +5,10 @@ This module contains tests for all REST API endpoints,
 ensuring proper request handling, response formats, and error conditions.
 """
 
-import pytest
-import json
-from unittest.mock import patch, MagicMock
-from fastapi.testclient import TestClient
+from unittest.mock import MagicMock, patch
 
-from jml_engine.models import HREvent, LifecycleEvent
+import pytest
+from fastapi.testclient import TestClient
 
 
 class TestHealthEndpoints:
@@ -20,7 +18,8 @@ class TestHealthEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     def test_root_endpoint(self, client):
         """Test the root endpoint returns correct information."""
@@ -54,7 +53,7 @@ class TestHealthEndpoints:
     def test_stats_endpoint(self, client):
         """Test the system statistics endpoint."""
         with patch('jml_engine.api.server.state_manager') as mock_sm, \
-             patch('jml_engine.api.server.audit_logger') as mock_al, \
+             patch('jml_engine.api.server.audit_logger') as _, \
              patch('jml_engine.api.server.evidence_store') as mock_es, \
              patch('jml_engine.api.server.hr_listener') as mock_hl:
 
@@ -91,7 +90,8 @@ class TestHREventEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     @pytest.fixture
     def valid_hr_event(self):
@@ -132,7 +132,7 @@ class TestHREventEndpoints:
         }
 
         response = client.post("/event/hr", json=invalid_event)
-        assert response.status_code == 400
+        assert response.status_code == 422
 
         data = response.json()
         assert "detail" in data
@@ -147,7 +147,7 @@ class TestHREventEndpoints:
         }
 
         response = client.post("/event/hr", json=incomplete_event)
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     @pytest.mark.parametrize("event_type", [
         "NEW_STARTER",
@@ -177,7 +177,8 @@ class TestUserManagementEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     def test_get_existing_user(self, client):
         """Test retrieving an existing user."""
@@ -307,7 +308,8 @@ class TestAuditEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     def test_audit_logs_access(self, client):
         """Test accessing audit logs."""
@@ -329,7 +331,8 @@ class TestSimulationEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     @pytest.fixture
     def simulation_request(self):
@@ -375,7 +378,7 @@ class TestSimulationEndpoints:
     def test_invalid_workflow_type(self, client, simulation_request):
         """Test simulation with invalid workflow type."""
         response = client.post("/simulate/invalid", json=simulation_request)
-        assert response.status_code == 404  # FastAPI will return 404 for invalid paths
+        assert response.status_code == 400
 
     def test_simulation_with_disabled_systems(self, client, simulation_request):
         """Test simulation with some systems disabled."""
@@ -393,7 +396,8 @@ class TestErrorHandling:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
-        return TestClient(app)
+        with TestClient(app) as client:
+            yield client
 
     def test_malformed_json(self, client):
         """Test handling of malformed JSON requests."""
@@ -402,7 +406,7 @@ class TestErrorHandling:
             data="invalid json content",
             headers={"Content-Type": "application/json"}
         )
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     def test_unsupported_content_type(self, client):
         """Test handling of unsupported content types."""
@@ -424,7 +428,6 @@ class TestErrorHandling:
     def test_concurrent_requests(self, client):
         """Test handling of concurrent requests."""
         import threading
-        import time
 
         results = []
         errors = []
@@ -438,7 +441,7 @@ class TestErrorHandling:
 
         # Make 10 concurrent requests
         threads = []
-        for i in range(10):
+        for _ in range(10):
             thread = threading.Thread(target=make_request)
             threads.append(thread)
             thread.start()

@@ -6,10 +6,9 @@ including validation, transformation, and common operations.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from typing import Any, Dict, List
 
-from ..models import HREvent, LifecycleEvent, UserIdentity
+from ..models import HREvent, LifecycleEvent
 
 logger = logging.getLogger(__name__)
 

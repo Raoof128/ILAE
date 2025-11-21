@@ -5,14 +5,13 @@ Provides a web-based interface for managing identities, viewing audit logs,
 and monitoring JML Engine operations.
 """
 
-import streamlit as st
-import pandas as pd
-import requests
-import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional
+
+import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
+import requests
+import streamlit as st
 
 # Page configuration
 st.set_page_config(
@@ -155,7 +154,7 @@ def show_overview_page():
 
         with col4:
             evidence_size_mb = stats_data['evidence']['total_size_bytes'] / (1024 * 1024)
-            st.metric("Evidence Size", ".1f")
+            st.metric("Evidence Size", f"{evidence_size_mb:.1f} MB")
 
         # Charts
         col1, col2 = st.columns(2)
@@ -257,10 +256,10 @@ def show_audit_page():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        employee_filter = st.text_input("Employee ID")
+        _employee_filter = st.text_input("Employee ID")
 
     with col2:
-        system_filter = st.selectbox("System", ["All", "aws", "azure", "github", "google", "slack"])
+        _system_filter = st.selectbox("System", ["All", "aws", "azure", "github", "google", "slack"])
 
     with col3:
         days_back = st.slider("Days back", 1, 365, 30)
@@ -309,13 +308,13 @@ def show_simulation_page():
                 help="Type of HR event to simulate"
             )
 
-            employee_id = st.text_input("Employee ID", value="SIM001")
-            name = st.text_input("Full Name", value="John Doe")
-            email = st.text_input("Email", value="john.doe@company.com")
+            _employee_id = st.text_input("Employee ID", value="SIM001")
+            _name = st.text_input("Full Name", value="John Doe")
+            _email = st.text_input("Email", value="john.doe@company.com")
 
         with col2:
-            department = st.selectbox("Department", ["Engineering", "HR", "Finance", "Marketing", "Sales"])
-            title = st.text_input("Job Title", value="Software Engineer")
+            _department = st.selectbox("Department", ["Engineering", "HR", "Finance", "Marketing", "Sales"])
+            _title = st.text_input("Job Title", value="Software Engineer")
 
             # Additional fields for mover events
             if event_type == "ROLE_CHANGE":
@@ -375,13 +374,13 @@ def show_compliance_page():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        start_date = st.date_input("Start Date", datetime.now() - timedelta(days=30))
+        _start_date = st.date_input("Start Date", datetime.now() - timedelta(days=30))
 
     with col2:
-        end_date = st.date_input("End Date", datetime.now())
+        _end_date = st.date_input("End Date", datetime.now())
 
     with col3:
-        frameworks = st.multiselect(
+        _frameworks = st.multiselect(
             "Frameworks",
             ["ISO_27001", "SOC2", "APRA_CPS_234", "Essential_8"],
             default=["ISO_27001", "SOC2"]
@@ -401,7 +400,7 @@ def show_settings_page():
 
     # API Configuration
     st.subheader("API Configuration")
-    api_url = st.text_input("API Base URL", value=API_BASE_URL)
+    _api_url = st.text_input("API Base URL", value=API_BASE_URL)
     if st.button("Update API URL"):
         st.success("API URL updated (would persist in real implementation)")
 

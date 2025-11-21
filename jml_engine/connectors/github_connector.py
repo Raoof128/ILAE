@@ -6,17 +6,17 @@ team management, and repository access control.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+from .base_connector import BaseConnector, ConnectorResult, MockConnector
 
 # Optional imports for GitHub SDK
 try:
     from github import Github, GithubException
+    from github.NamedUser import NamedUser
     from github.Organization import Organization
     from github.Team import Team
-    from github.NamedUser import NamedUser
     GITHUB_SDK_AVAILABLE = True
 except ImportError:
     GITHUB_SDK_AVAILABLE = False
@@ -53,7 +53,7 @@ class GitHubConnector(BaseConnector):
             try:
                 self.org = self.github.get_organization(self.org_name)
             except GithubException as e:
-                raise ValueError(f"Failed to access GitHub organization {self.org_name}: {e}")
+                raise ValueError(f"Failed to access GitHub organization {self.org_name}: {e}") from e
         else:
             self.github = None
             self.org = None

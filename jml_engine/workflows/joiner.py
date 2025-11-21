@@ -6,11 +6,11 @@ and assigning initial access entitlements across all integrated systems.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
 
+from ..models import HREvent, LifecycleEvent, WorkflowResult
 from .base_workflow import BaseWorkflow, WorkflowStep
-from ..models import HREvent, WorkflowResult, LifecycleEvent
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class JoinerWorkflow(BaseWorkflow):
         if hr_event.event != LifecycleEvent.NEW_STARTER:
             raise ValueError(f"Joiner workflow can only process NEW_STARTER events, got {hr_event.event}")
 
-        self.started_at = datetime.utcnow()
+        self.started_at = datetime.now(timezone.utc)
         logger.info(f"Starting joiner workflow for employee {hr_event.employee_id}")
 
         try:
@@ -44,7 +44,7 @@ class JoinerWorkflow(BaseWorkflow):
             access_profile = self.policy_mapper.get_access_profile_from_event(hr_event)
 
             # Create user identity
-            identity = self._get_user_identity(hr_event)
+            self._get_user_identity(hr_event)
 
             # Execute provisioning steps
             self._execute_provisioning_steps(hr_event, access_profile)
@@ -54,7 +54,7 @@ class JoinerWorkflow(BaseWorkflow):
             self.state_manager.update_entitlements(hr_event.employee_id, entitlements)
 
             # Mark workflow as completed
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
 
             # Create workflow result
             result = WorkflowResult(
@@ -73,7 +73,7 @@ class JoinerWorkflow(BaseWorkflow):
 
         except Exception as e:
             logger.error(f"Joiner workflow failed for {hr_event.employee_id}: {e}")
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
             self.errors.append(str(e))
 
             return WorkflowResult(

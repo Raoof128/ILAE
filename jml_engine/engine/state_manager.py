@@ -7,11 +7,11 @@ Provides persistence and retrieval of identity information for workflow processi
 
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 
-from ..models import UserIdentity, AccessEntitlement, UserStatus, HREvent
+from ..models import AccessEntitlement, HREvent, UserIdentity, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class StateManager:
             existing.email = hr_event.email
             existing.department = hr_event.department
             existing.title = hr_event.title
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
             existing.last_hr_event = hr_event
 
             # Update status based on event type
@@ -137,7 +137,7 @@ class StateManager:
             return False
 
         identity.entitlements = entitlements
-        identity.updated_at = datetime.utcnow()
+        identity.updated_at = datetime.now(timezone.utc)
 
         self._save_state()
         logger.info(f"Updated entitlements for employee {employee_id}: {len(entitlements)} entitlements")
@@ -167,7 +167,7 @@ class StateManager:
                 return False
 
         identity.entitlements.append(entitlement)
-        identity.updated_at = datetime.utcnow()
+        identity.updated_at = datetime.now(timezone.utc)
 
         self._save_state()
         logger.info(f"Added entitlement to {employee_id}: {entitlement.system}/{entitlement.resource_name}")
@@ -196,7 +196,7 @@ class StateManager:
         ]
 
         if len(identity.entitlements) < original_count:
-            identity.updated_at = datetime.utcnow()
+            identity.updated_at = datetime.now(timezone.utc)
             self._save_state()
             logger.info(f"Removed entitlement from {employee_id}: {system}/{resource_name}")
             return True
@@ -218,7 +218,7 @@ class StateManager:
             return False
 
         identity.status = UserStatus.TERMINATED
-        identity.updated_at = datetime.utcnow()
+        identity.updated_at = datetime.now(timezone.utc)
 
         self._save_state()
         logger.info(f"Deactivated identity for employee {employee_id}")
@@ -302,9 +302,9 @@ class StateManager:
             # Convert identities to dict for JSON serialization
             state_data = {
                 "identities": {
-                    emp_id: identity.dict() for emp_id, identity in self.identities.items()
+                    emp_id: identity.model_dump() for emp_id, identity in self.identities.items()
                 },
-                "last_updated": datetime.utcnow().isoformat()
+                "last_updated": datetime.now(timezone.utc).isoformat()
             }
 
             with open(self.storage_path, 'w', encoding='utf-8') as f:
@@ -319,7 +319,7 @@ class StateManager:
             return
 
         try:
-            with open(self.storage_path, 'r', encoding='utf-8') as f:
+            with open(self.storage_path, encoding='utf-8') as f:
                 state_data = json.load(f)
 
             identities_data = state_data.get("identities", {})

@@ -9,22 +9,18 @@ and administering the JML Engine system.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-import sys
+from typing import Any, Dict, Optional
 
 import click
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.text import Text
-from rich.prompt import Confirm, Prompt
+from rich.table import Table
 
-from ..models import HREvent, LifecycleEvent
-from ..ingestion import HREventListener
-from ..workflows import JoinerWorkflow, MoverWorkflow, LeaverWorkflow, validate_hr_event
-from ..engine import PolicyMapper, StateManager
 from ..audit import AuditLogger, EvidenceStore
-from ..connectors import AWSConnector, AzureConnector, GitHubConnector, GoogleConnector, SlackConnector
+from ..engine import PolicyMapper, StateManager
+from ..ingestion import HREventListener
+from ..models import HREvent
+from ..workflows import JoinerWorkflow, LeaverWorkflow, MoverWorkflow, validate_hr_event
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -69,7 +65,7 @@ class JMLController:
 
         if self.config_path and self.config_path.exists():
             try:
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path) as f:
                     file_config = json.load(f)
                     config.update(file_config)
                 console.print(f"[blue]Loaded configuration from {self.config_path}[/blue]")
@@ -98,7 +94,7 @@ def process_event(ctx, event_file):
 
     try:
         # Load event from file
-        with open(event_file, 'r') as f:
+        with open(event_file) as f:
             event_data = json.load(f)
 
         # Convert to HREvent
@@ -133,7 +129,7 @@ def process_event(ctx, event_file):
 
         # Display results
         if result.success:
-            console.print(f"[green]✓ Workflow completed successfully[/green]")
+            console.print("[green]✓ Workflow completed successfully[/green]")
         else:
             console.print(f"[red]✗ Workflow failed with {len(result.errors)} errors[/red]")
 
@@ -366,7 +362,7 @@ def stats(ctx):
                 console.print(f"  {status}: {count}")
 
         # Display evidence stats
-        console.print(f"\n[bold blue]Evidence Statistics[/bold blue]")
+        console.print("\n[bold blue]Evidence Statistics[/bold blue]")
         console.print(f"Total Evidence Files: {evidence_stats['total_files']}")
         console.print(f"Total Size: {evidence_stats['total_size_bytes']:,} bytes")
 
@@ -388,11 +384,11 @@ def compliance_report(ctx, start_date, end_date, frameworks):
     """Generate compliance report."""
     controller = ctx.obj['controller']
 
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     # Default date range
     if not end_date:
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
     else:
         end_date = datetime.fromisoformat(end_date)
 
@@ -412,12 +408,12 @@ def compliance_report(ctx, start_date, end_date, frameworks):
             start_date, end_date, frameworks
         )
 
-        console.print(f"[bold blue]Compliance Report[/bold blue]")
+        console.print("[bold blue]Compliance Report[/bold blue]")
         console.print(f"Period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
         console.print(f"Frameworks: {', '.join(frameworks)}")
 
-        console.print("
-[bold]Summary[/bold]"        console.print(f"Total Events: {report['summary']['total_events']}")
+        console.print("\n[bold]Summary[/bold]")
+        console.print(f"Total Events: {report['summary']['total_events']}")
         console.print(f"Successful Operations: {report['summary']['successful_operations']}")
         console.print(f"Failed Operations: {report['summary']['failed_operations']}")
         console.print(f"Critical Failures: {report['summary']['critical_failures']}")
@@ -428,7 +424,7 @@ def compliance_report(ctx, start_date, end_date, frameworks):
                 console.print(f"• [{finding['severity']}] {finding['framework']}: {finding['finding']}")
 
         if report['recommendations']:
-            console.print(f"\n[bold]Recommendations[/bold]")
+            console.print("\n[bold]Recommendations[/bold]")
             for rec in report['recommendations']:
                 console.print(f"• {rec}")
 
@@ -458,7 +454,7 @@ def serve(ctx, port, host):
 def display_workflow_results(result):
     """Display workflow execution results."""
     if result.success:
-        console.print(f"[green]✓ Workflow completed successfully[/green]")
+        console.print("[green]✓ Workflow completed successfully[/green]")
     else:
         console.print(f"[red]✗ Workflow failed with {len(result.errors)} errors[/red]")
 

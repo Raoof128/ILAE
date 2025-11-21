@@ -6,11 +6,10 @@ BambooHR typically sends events as JSON with employee field mappings.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from .base import HRFormatParser
 from ...models import HREvent, LifecycleEvent
+from .base import HRFormatParser
 
 logger = logging.getLogger(__name__)
 

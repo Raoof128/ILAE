@@ -15,8 +15,8 @@ __email__ = "team@example.com"
 from .engine.policy_mapper import PolicyMapper
 from .engine.state_manager import StateManager
 from .workflows.joiner import JoinerWorkflow
-from .workflows.mover import MoverWorkflow
 from .workflows.leaver import LeaverWorkflow
+from .workflows.mover import MoverWorkflow
 
 __all__ = [
     "PolicyMapper",

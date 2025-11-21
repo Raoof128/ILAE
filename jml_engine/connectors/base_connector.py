@@ -5,12 +5,12 @@ This module provides the foundation for all system connectors (AWS, Azure, GitHu
 with both real API implementations and mock/simulated backends.
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
 import logging
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from ..models import UserIdentity, AuditRecord
+from ..models import UserIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +205,7 @@ class MockConnector(BaseConnector):
             "name": user.name,
             "email": user.email,
             "active": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "groups": [],
             "roles": []
         }

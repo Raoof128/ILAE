@@ -6,16 +6,16 @@ for user account management, group memberships, and role assignments.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+from .base_connector import BaseConnector, ConnectorResult, MockConnector
 
 # Optional imports for Azure SDK
 try:
+    from azure.core.exceptions import HttpResponseError
     from azure.identity import DefaultAzureCredential
     from azure.mgmt.authorization import AuthorizationManagementClient
-    from azure.core.exceptions import HttpResponseError
     AZURE_SDK_AVAILABLE = True
 except ImportError:
     AZURE_SDK_AVAILABLE = False

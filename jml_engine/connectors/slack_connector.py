@@ -6,10 +6,10 @@ channel access, and user management.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from .base_connector import BaseConnector, MockConnector, ConnectorResult
 from ..models import UserIdentity
+from .base_connector import BaseConnector, ConnectorResult, MockConnector
 
 # Optional imports for Slack SDK
 try:
