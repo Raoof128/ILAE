@@ -245,6 +245,7 @@ jobs:
           context: .
           file: ./Dockerfile.api
           push: false
+          load: true
           tags: jml-engine-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -255,6 +256,7 @@ jobs:
           context: .
           file: ./Dockerfile.dashboard
           push: false
+          load: true
           tags: jml-engine-dashboard:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
