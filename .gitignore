@@ -110,8 +110,8 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# JML Engine specific
-audit/
+# JML Engine specific - runtime data
+/audit/
 data/
 logs/
 *.log
@@ -228,8 +228,8 @@ dist/
 security-report.json
 safety-report.json
 
-# Audit and compliance
-audit/
+# Audit and compliance - runtime data
+/audit/
 evidence/
 reports/
 
