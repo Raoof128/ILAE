@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class EvidenceStore:
     """
     Secure storage for compliance evidence.
-    
+
     Manages files like screenshots, ticket exports, and approval emails
     that serve as evidence for audit compliance.
     """
@@ -31,7 +31,9 @@ class EvidenceStore:
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
-    def store_evidence(self, data: Any, employee_id: str = "unknown", audit_id: str = "unknown") -> str:
+    def store_evidence(
+        self, data: Any, employee_id: str = "unknown", audit_id: str = "unknown"
+    ) -> str:
         """
         Store evidence (file or data).
 
@@ -48,9 +50,10 @@ class EvidenceStore:
             date_path = datetime.now(timezone.utc).strftime("%Y/%m")
             target_dir = self.storage_dir / date_path / employee_id
             target_dir.mkdir(parents=True, exist_ok=True)
-            
+
             if audit_id == "unknown":
                 import uuid
+
                 audit_id = str(uuid.uuid4())
 
             if isinstance(data, str) and Path(data).exists():
@@ -62,19 +65,20 @@ class EvidenceStore:
                 shutil.copy2(source, target_path)
                 logger.info(f"Stored evidence file for {employee_id} at {target_path}")
                 return str(target_path)
-            
+
             else:
                 # It's raw data, save as JSON
                 import json
+
                 filename = f"{audit_id}.json"
                 target_path = target_dir / filename
-                
-                with open(target_path, 'w', encoding='utf-8') as f:
+
+                with open(target_path, "w", encoding="utf-8") as f:
                     if isinstance(data, dict) or isinstance(data, list):
                         json.dump(data, f, indent=2, default=str)
                     else:
                         f.write(str(data))
-                        
+
                 logger.info(f"Stored evidence data for {employee_id} at {target_path}")
                 return str(target_path)
 
@@ -85,22 +89,23 @@ class EvidenceStore:
     def retrieve_evidence(self, evidence_id: str) -> Optional[Any]:
         """
         Retrieve stored evidence by ID or path.
-        
+
         Args:
             evidence_id: Path or ID of the evidence
-            
+
         Returns:
             The evidence data or path
         """
         # If it's a full path
         path = Path(evidence_id)
         if path.exists():
-            if path.suffix == '.json':
+            if path.suffix == ".json":
                 import json
-                with open(path, 'r', encoding='utf-8') as f:
+
+                with open(path, encoding="utf-8") as f:
                     return json.load(f)
             return path
-            
+
         # If it's just an ID, we'd need a lookup mechanism (database).
         # For this simple implementation, we assume evidence_id IS the path.
         return None

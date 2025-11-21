@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class AuditLogger:
     """
     Secure logger for audit events.
-    
+
     Persists audit records to a secure location (local file system for now,
     could be S3/Splunk in production) and ensures immutability.
     """
@@ -50,9 +50,9 @@ class AuditLogger:
             log_file = self.audit_dir / f"audit_{date_str}.jsonl"
 
             # Append to log file
-            with open(log_file, 'a', encoding='utf-8') as f:
+            with open(log_file, "a", encoding="utf-8") as f:
                 # Convert to dict and handle datetime serialization
-                data = record.model_dump(mode='json')
+                data = record.model_dump(mode="json")
                 f.write(json.dumps(data) + "\n")
 
             logger.info(f"Logged audit event {record.id} for {record.employee_id}")
@@ -63,11 +63,13 @@ class AuditLogger:
             # In a real system, we might raise here or write to a fallback
             raise
 
-    def get_events(self, 
-                  employee_id: Optional[str] = None, 
-                  start_date: Optional[datetime] = None,
-                  end_date: Optional[datetime] = None,
-                  limit: int = 100) -> List[AuditRecord]:
+    def get_events(
+        self,
+        employee_id: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: int = 100,
+    ) -> List[AuditRecord]:
         """
         Retrieve audit events with filtering.
 
@@ -81,49 +83,51 @@ class AuditLogger:
             List of matching AuditRecords
         """
         results = []
-        
+
         # Iterate through log files (most recent first)
         log_files = sorted(self.audit_dir.glob("audit_*.jsonl"), reverse=True)
-        
+
         for log_file in log_files:
             if len(results) >= limit:
                 break
-                
+
             try:
-                with open(log_file, 'r', encoding='utf-8') as f:
+                with open(log_file, encoding="utf-8") as f:
                     # Read lines in reverse order for most recent first
                     lines = f.readlines()
                     for line in reversed(lines):
                         if len(results) >= limit:
                             break
-                            
+
                         try:
                             data = json.loads(line)
                             record = AuditRecord(**data)
-                            
+
                             # Apply filters
                             if employee_id and record.employee_id != employee_id:
                                 continue
-                                
+
                             if start_date and record.timestamp < start_date:
                                 continue
-                                
+
                             if end_date and record.timestamp > end_date:
                                 continue
-                                
+
                             results.append(record)
-                            
+
                         except Exception as e:
                             logger.warning(f"Failed to parse audit record: {e}")
                             continue
-                            
+
             except Exception as e:
                 logger.error(f"Failed to read log file {log_file}: {e}")
                 continue
-                
+
         return results
 
-    def generate_compliance_report(self, start_date: datetime, end_date: datetime, standards: List[str]) -> Dict[str, Any]:
+    def generate_compliance_report(
+        self, start_date: datetime, end_date: datetime, standards: List[str]
+    ) -> Dict[str, Any]:
         """
         Generate a compliance report for a given period.
 
@@ -136,28 +140,25 @@ class AuditLogger:
             Dictionary containing the compliance report
         """
         events = self.get_events(start_date=start_date, end_date=end_date, limit=10000)
-        
+
         total_events = len(events)
         successful = len([e for e in events if e.success])
         failed = total_events - successful
-        
+
         report = {
-            "period": {
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat()
-            },
+            "period": {"start": start_date.isoformat(), "end": end_date.isoformat()},
             "standards": standards,
             "summary": {
                 "total_events": total_events,
                 "successful_operations": successful,
                 "failed_operations": failed,
-                "compliance_score": (successful / total_events * 100) if total_events > 0 else 100
+                "compliance_score": (successful / total_events * 100) if total_events > 0 else 100,
             },
-            "events": [e.model_dump(mode='json') for e in events],
-            "recommendations": []
+            "events": [e.model_dump(mode="json") for e in events],
+            "recommendations": [],
         }
-        
+
         if failed > 0:
             report["recommendations"].append("Investigate failed IAM operations")
-            
+
         return report
