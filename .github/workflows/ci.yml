@@ -352,16 +352,21 @@ jobs:
 
       - name: Check version consistency
         run: |
-          # Check that version is consistent across files
+          # Verify version is defined and valid (using dynamic versioning from __init__.py)
           PYTHON_VERSION=$(python -c "import jml_engine; print(jml_engine.__version__)")
-          PYPROJECT_VERSION=$(grep '^version =' pyproject.toml | cut -d'"' -f2)
-
-          if [ "$PYTHON_VERSION" != "$PYPROJECT_VERSION" ]; then
-            echo "Version mismatch: Python=$PYTHON_VERSION, pyproject.toml=$PYPROJECT_VERSION"
+          
+          if [ -z "$PYTHON_VERSION" ]; then
+            echo "❌ Version not found in jml_engine.__version__"
+            exit 1
+          fi
+          
+          # Verify it's a valid semantic version (basic check)
+          if [[ ! "$PYTHON_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "❌ Invalid version format: $PYTHON_VERSION (expected semver like 1.0.0)"
             exit 1
           fi
 
-          echo "✅ Version consistency check passed: $PYTHON_VERSION"
+          echo "✅ Version check passed: $PYTHON_VERSION"
 
       - name: Build distribution packages
         run: |
