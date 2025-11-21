@@ -1,0 +1,175 @@
+# Role Mappings Configuration
+# Maps specific job titles and levels to access profiles
+# This provides fine-grained control over entitlements based on role hierarchy
+
+# Job title patterns and their corresponding access levels
+title_mappings:
+
+  # Executive Leadership
+  - pattern: "Chief.*"
+    department_override: null  # Executives get cross-department access
+    additional_aws_roles:
+      - "AdministratorAccess"
+    additional_azure_groups:
+      - "Executive-Team"
+    additional_github_teams:
+      - "executives"
+    additional_slack_channels:
+      - "executives"
+
+  - pattern: "Vice President|VP.*|Director.*"
+    department_override: null
+    additional_aws_roles:
+      - "PowerUserAccess"
+    additional_azure_groups:
+      - "Leadership-Team"
+    additional_github_teams:
+      - "leadership"
+    additional_slack_channels:
+      - "leadership"
+
+  # Engineering Roles
+  - pattern: "Staff Engineer|Principal Engineer|Senior Staff Engineer"
+    department: "Engineering"
+    additional_aws_roles:
+      - "EC2FullAccess"
+      - "LambdaFullAccess"
+      - "RDSFullAccess"
+    additional_azure_groups:
+      - "Senior-Engineering"
+    additional_github_teams:
+      - "senior-devs"
+      - "architects"
+
+  - pattern: "Engineering Manager|Tech Lead"
+    department: "Engineering"
+    additional_aws_roles:
+      - "IAMReadOnly"  # Can view IAM but not modify
+    additional_azure_groups:
+      - "Engineering-Managers"
+    additional_github_teams:
+      - "managers"
+
+  # IT/Security Roles
+  - pattern: "IT Administrator|System Administrator|DevOps Engineer"
+    department: "IT"
+    additional_aws_roles:
+      - "EC2FullAccess"
+      - "IAMFullAccess"
+      - "CloudFormationFullAccess"
+    additional_azure_groups:
+      - "IT-Operators"
+    additional_github_teams:
+      - "infrastructure"
+
+  - pattern: "Security Engineer|Security Analyst"
+    department: "IT"
+    additional_aws_roles:
+      - "SecurityAudit"
+      - "GuardDutyFullAccess"
+    additional_azure_groups:
+      - "Security-Operators"
+    additional_github_teams:
+      - "security-ops"
+
+  # Developer Roles
+  - pattern: "Software Engineer|Developer|Programmer"
+    department: "Engineering"
+    additional_aws_roles:
+      - "EC2ReadOnly"
+      - "S3FullAccess"  # Need to upload artifacts
+    additional_github_teams:
+      - "developers"
+
+  # QA/Testing Roles
+  - pattern: "QA Engineer|Test Engineer|Quality Assurance"
+    department: "Engineering"
+    additional_aws_roles:
+      - "DeviceFarmFullAccess"
+    additional_github_teams:
+      - "qa-team"
+
+  # Data/Analytics Roles
+  - pattern: "Data Engineer|Data Analyst|Data Scientist"
+    department: "Engineering"
+    additional_aws_roles:
+      - "AthenaFullAccess"
+      - "GlueFullAccess"
+      - "RedshiftReadOnly"
+    additional_azure_groups:
+      - "Data-Team"
+
+  # Finance Roles
+  - pattern: "Financial Analyst|Accountant|Controller"
+    department: "Finance"
+    additional_aws_roles:
+      - "CostExplorerFullAccess"
+    additional_azure_groups:
+      - "Finance-Users"
+
+  # HR Roles
+  - pattern: "HR Manager|People Operations|Recruiter"
+    department: "HR"
+    additional_azure_groups:
+      - "HR-Managers"
+    additional_google_groups:
+      - "hr-managers@company.com"
+
+  # Marketing Roles
+  - pattern: "Marketing Manager|Content Creator|Designer"
+    department: "Marketing"
+    additional_aws_roles:
+      - "SESFullAccess"  # Email service access
+    additional_azure_groups:
+      - "Marketing-Creative"
+
+  # Sales Roles
+  - pattern: "Sales Representative|Account Executive|Business Development"
+    department: "Sales"
+    additional_azure_groups:
+      - "Sales-Reps"
+
+  # Contractor Patterns
+  - pattern: "Contractor|Consultant"
+    access_override: "contractor_access"
+
+  # Intern Patterns
+  - pattern: "Intern"
+    access_override: "intern_access"
+
+# Level-based mappings (if titles include levels)
+level_mappings:
+  senior:
+    patterns: ["Senior", "Sr\\.", "Lead", "Principal"]
+    multiplier: 1.5  # Additional entitlements for senior roles
+
+  junior:
+    patterns: ["Junior", "Jr\\.", "Associate"]
+    multiplier: 0.8  # Reduced entitlements for junior roles
+
+# Custom role mappings (overrides for specific titles)
+custom_mappings:
+  "DevOps Engineer":
+    department: "IT"
+    additional_aws_roles:
+      - "CodePipelineFullAccess"
+      - "CodeBuildFullAccess"
+      - "CodeDeployFullAccess"
+    additional_github_teams:
+      - "cicd-admins"
+
+  "Security Engineer":
+    department: "IT"
+    additional_aws_roles:
+      - "ConfigFullAccess"
+      - "MacieFullAccess"
+    additional_azure_groups:
+      - "Security-Analysts"
+
+  "Data Engineer":
+    department: "Engineering"
+    additional_aws_roles:
+      - "EMRFullAccess"
+      - "KinesisFullAccess"
+    additional_github_teams:
+      - "data-platform"

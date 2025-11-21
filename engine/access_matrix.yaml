@@ -1,0 +1,143 @@
+# IAM Access Matrix Configuration
+# Defines the baseline access entitlements for each department and role combination
+# This file maps business roles to technical permissions across all integrated systems
+
+# Default access for all employees (baseline entitlements)
+default_access:
+  aws_roles:
+    - "ReadOnlyAccess"  # AWS managed policy for basic read access
+  azure_groups:
+    - "All Employees"
+  github_teams:
+    - "employees"
+  google_groups:
+    - "employees@company.com"
+  slack_channels:
+    - "general"
+    - "announcements"
+
+# Department-specific access configurations
+departments:
+
+  # Engineering Department
+  Engineering:
+    description: "Software development and engineering roles"
+    aws_roles:
+      - "EC2ReadOnly"
+      - "S3ReadOnly"
+      - "CloudWatchReadOnly"
+      - "DevOpsRole"
+    azure_groups:
+      - "Engineering-SG"
+      - "DevOps-SG"
+    github_teams:
+      - "engineering"
+      - "dev-team"
+    google_groups:
+      - "engineering@company.com"
+    slack_channels:
+      - "engineering"
+      - "devops"
+      - "random"
+
+  # IT/Security Department
+  IT:
+    description: "Information Technology and Security operations"
+    aws_roles:
+      - "AdministratorAccess"  # Full AWS access for IT admins
+      - "SecurityAudit"
+    azure_groups:
+      - "IT-Admins"
+      - "Security-Team"
+    github_teams:
+      - "it-team"
+      - "security"
+    google_groups:
+      - "it@company.com"
+    slack_channels:
+      - "it-support"
+      - "security"
+
+  # Finance Department
+  Finance:
+    description: "Financial operations and accounting"
+    aws_roles:
+      - "ReadOnlyAccess"
+    azure_groups:
+      - "Finance-Users"
+    github_teams:
+      - "finance"
+    google_groups:
+      - "finance@company.com"
+    slack_channels:
+      - "finance"
+
+  # Human Resources
+  HR:
+    description: "Human Resources and People operations"
+    aws_roles:
+      - "ReadOnlyAccess"
+    azure_groups:
+      - "HR-Team"
+    github_teams:
+      - "hr"
+    google_groups:
+      - "hr@company.com"
+    slack_channels:
+      - "hr"
+
+  # Marketing Department
+  Marketing:
+    description: "Marketing and communications"
+    aws_roles:
+      - "ReadOnlyAccess"
+    azure_groups:
+      - "Marketing-Team"
+    github_teams:
+      - "marketing"
+    google_groups:
+      - "marketing@company.com"
+    slack_channels:
+      - "marketing"
+      - "social-media"
+
+  # Sales Department
+  Sales:
+    description: "Sales and business development"
+    aws_roles:
+      - "ReadOnlyAccess"
+    azure_groups:
+      - "Sales-Team"
+    github_teams:
+      - "sales"
+    google_groups:
+      - "sales@company.com"
+    slack_channels:
+      - "sales"
+
+# Contractor access (limited baseline)
+contractor_access:
+  description: "Limited access for external contractors"
+  aws_roles:
+    - "ReadOnlyAccess"
+  azure_groups:
+    - "Contractors"
+  github_teams:
+    - "contractors"
+  google_groups:
+    - "contractors@company.com"
+  slack_channels:
+    - "contractors"
+
+# Temporary/Intern access (very limited)
+intern_access:
+  description: "Minimal access for interns and temporary staff"
+  aws_roles: []
+  azure_groups:
+    - "Interns"
+  github_teams:
+    - "interns"
+  google_groups:
+    - "interns@company.com"
+  slack_channels:
+    - "interns"

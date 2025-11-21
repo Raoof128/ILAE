@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # JML Engine API Server
+  jml-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      - MOCK_MODE=true
+      - AUDIT_DIR=/app/audit
+      - STATE_FILE=/app/data/state.json
+    volumes:
+      - ./audit:/app/audit
+      - ./data:/app/data
+      - ./engine/access_matrix.yaml:/app/jml_engine/engine/access_matrix.yaml
+      - ./engine/role_mappings.yaml:/app/jml_engine/engine/role_mappings.yaml
+    networks:
+      - jml-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # JML Engine Dashboard
+  jml-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://jml-api:8000
+      - MOCK_MODE=true
+    volumes:
+      - ./audit:/app/audit
+      - ./data:/app/data
+    depends_on:
+      - jml-api
+    networks:
+      - jml-network
+    restart: unless-stopped
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - jml-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for advanced state management (optional)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: jml_engine
+      POSTGRES_USER: jml_user
+      POSTGRES_PASSWORD: jml_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - jml-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  jml-network:
+    driver: bridge

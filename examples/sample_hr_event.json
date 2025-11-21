@@ -1,0 +1,13 @@
+{
+  "event": "NEW_STARTER",
+  "employee_id": "EMP001",
+  "name": "John Smith",
+  "email": "john.smith@company.com",
+  "department": "Engineering",
+  "title": "Software Engineer",
+  "manager_email": "jane.manager@company.com",
+  "start_date": "2024-01-15",
+  "location": "New York",
+  "contract_type": "PERMANENT",
+  "source_system": "Workday"
+}
