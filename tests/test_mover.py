@@ -21,13 +21,7 @@ class TestMoverWorkflow:
         """Mock configuration for testing."""
         return {
             "mock_mode": True,
-            "connectors": {
-                "aws": {},
-                "azure": {},
-                "github": {},
-                "google": {},
-                "slack": {}
-            }
+            "connectors": {"aws": {}, "azure": {}, "github": {}, "google": {}, "slack": {}},
         }
 
     @pytest.fixture
@@ -42,7 +36,7 @@ class TestMoverWorkflow:
             title="Senior Engineer",
             previous_department="Engineering",
             previous_title="Engineer",
-            source_system="TEST"
+            source_system="TEST",
         )
 
     @pytest.fixture
@@ -57,7 +51,7 @@ class TestMoverWorkflow:
             title="Manager",
             previous_department="Sales",
             previous_title="Manager",
-            source_system="TEST"
+            source_system="TEST",
         )
 
     @pytest.fixture
@@ -74,10 +68,7 @@ class TestMoverWorkflow:
         assert workflow.steps == []
         assert workflow.errors == []
 
-    @pytest.mark.parametrize("event_type", [
-        LifecycleEvent.NEW_STARTER,
-        LifecycleEvent.TERMINATION
-    ])
+    @pytest.mark.parametrize("event_type", [LifecycleEvent.NEW_STARTER, LifecycleEvent.TERMINATION])
     def test_invalid_event_type(self, workflow, event_type):
         """Test that workflow rejects invalid event types."""
         invalid_event = HREvent(
@@ -87,16 +78,19 @@ class TestMoverWorkflow:
             email="john.doe@company.com",
             department="Engineering",
             title="Software Engineer",
-            source_system="TEST"
+            source_system="TEST",
         )
 
-        with pytest.raises(ValueError, match="Mover workflow can only process ROLE_CHANGE/DEPARTMENT_CHANGE events"):
+        with pytest.raises(
+            ValueError, match="Mover workflow can only process ROLE_CHANGE/DEPARTMENT_CHANGE events"
+        ):
             workflow.execute(invalid_event)
 
-    @patch('jml_engine.workflows.base_workflow.PolicyMapper')
-    @patch('jml_engine.workflows.base_workflow.StateManager')
-    def test_successful_role_change(self, mock_state_manager, mock_policy_mapper,
-                                  workflow, role_change_event):
+    @patch("jml_engine.workflows.base_workflow.PolicyMapper")
+    @patch("jml_engine.workflows.base_workflow.StateManager")
+    def test_successful_role_change(
+        self, mock_state_manager, mock_policy_mapper, workflow, role_change_event
+    ):
         """Test successful execution of role change workflow."""
         # Mock the policy mapper
         mock_policy_instance = Mock()
@@ -105,7 +99,7 @@ class TestMoverWorkflow:
             azure_groups=["Engineering"],
             github_teams=["developers"],
             google_groups=["employees"],
-            slack_channels=["engineering"]
+            slack_channels=["engineering"],
         )
         mock_policy_mapper.return_value = mock_policy_instance
 
@@ -114,7 +108,7 @@ class TestMoverWorkflow:
         mock_identity = Mock()
         mock_identity.entitlements = [
             Mock(system="aws", resource_type="role", resource_name="ReadOnlyAccess"),
-            Mock(system="github", resource_type="team", resource_name="interns")
+            Mock(system="github", resource_type="team", resource_name="interns"),
         ]
         mock_state_instance.get_identity.return_value = mock_identity
         mock_state_instance.update_entitlements.return_value = True
@@ -122,11 +116,11 @@ class TestMoverWorkflow:
 
         # Mock connectors to succeed
         workflow.connectors = {
-            'aws': Mock(),
-            'azure': Mock(),
-            'github': Mock(),
-            'google': Mock(),
-            'slack': Mock()
+            "aws": Mock(),
+            "azure": Mock(),
+            "github": Mock(),
+            "google": Mock(),
+            "slack": Mock(),
         }
 
         for connector in workflow.connectors.values():
@@ -162,7 +156,7 @@ class TestMoverWorkflow:
 
         current_entitlements = [
             Mock(system="aws", resource_type="role", resource_name="ReadOnlyAccess"),
-            Mock(system="github", resource_type="team", resource_name="interns")
+            Mock(system="github", resource_type="team", resource_name="interns"),
         ]
 
         employee_id = "TEST001"
@@ -173,7 +167,7 @@ class TestMoverWorkflow:
 
         # Should remove interns team AND ReadOnlyAccess (since it's not in new profile)
         assert len(to_remove) == 2  # interns team, ReadOnlyAccess
-        assert len(to_add) == 4     # EC2ReadOnly, S3ReadOnly, Engineering, developers
+        assert len(to_add) == 4  # EC2ReadOnly, S3ReadOnly, Engineering, developers
 
     def test_workflow_with_partial_failures(self, workflow, role_change_event):
         """Test workflow with some connector failures."""
@@ -187,7 +181,7 @@ class TestMoverWorkflow:
             azure_groups=["Engineering"],
             github_teams=[],
             google_groups=[],
-            slack_channels=[]
+            slack_channels=[],
         )
 
         mock_identity = Mock()
@@ -197,24 +191,20 @@ class TestMoverWorkflow:
 
         # Mock connectors - AWS succeeds, others fail
         workflow.connectors = {
-            'aws': Mock(),
-            'azure': Mock(),
-            'github': Mock(),
-            'google': Mock(),
-            'slack': Mock()
+            "aws": Mock(),
+            "azure": Mock(),
+            "github": Mock(),
+            "google": Mock(),
+            "slack": Mock(),
         }
 
-        workflow.connectors['aws'].grant_role.return_value = Mock(success=True, message="Success")
-        for name in ['azure', 'github', 'google', 'slack']:
+        workflow.connectors["aws"].grant_role.return_value = Mock(success=True, message="Success")
+        for name in ["azure", "github", "google", "slack"]:
             workflow.connectors[name].grant_role.return_value = Mock(
-                success=False,
-                message=f"{name} failed",
-                error="Connection error"
+                success=False, message=f"{name} failed", error="Connection error"
             )
             workflow.connectors[name].add_to_group.return_value = Mock(
-                success=False,
-                message=f"{name} failed",
-                error="Connection error"
+                success=False, message=f"{name} failed", error="Connection error"
             )
 
         # Execute workflow
@@ -251,7 +241,7 @@ class TestMoverWorkflow:
             azure_groups=[],
             github_teams=[],
             google_groups=[],
-            slack_channels=[]
+            slack_channels=[],
         )
 
         mock_identity = Mock()
@@ -260,11 +250,9 @@ class TestMoverWorkflow:
         workflow.state_manager.update_entitlements.return_value = True
 
         # Mock connector to fail
-        workflow.connectors = {'aws': Mock()}
-        workflow.connectors['aws'].grant_role.return_value = Mock(
-            success=False,
-            message="Failed",
-            error="Permission denied"
+        workflow.connectors = {"aws": Mock()}
+        workflow.connectors["aws"].grant_role.return_value = Mock(
+            success=False, message="Failed", error="Permission denied"
         )
 
         # Execute workflow

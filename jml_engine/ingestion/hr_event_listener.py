@@ -56,8 +56,8 @@ class HREventListener:
 
         # Handle file paths
         if isinstance(data, Path):
-            if data.suffix.lower() == '.csv':
-                with open(data, encoding='utf-8') as f:
+            if data.suffix.lower() == ".csv":
+                with open(data, encoding="utf-8") as f:
                     content = f.read()
                 return self._parse_with_auto_detection(content)
             else:
@@ -73,7 +73,9 @@ class HREventListener:
 
         raise ValueError(f"Unsupported data type: {type(data)}")
 
-    def ingest_csv_file(self, file_path: Union[str, Path], column_mappings: Optional[Dict[str, List[str]]] = None) -> List[HREvent]:
+    def ingest_csv_file(
+        self, file_path: Union[str, Path], column_mappings: Optional[Dict[str, List[str]]] = None
+    ) -> List[HREvent]:
         """
         Specifically ingest HR events from a CSV file.
 
@@ -90,7 +92,7 @@ class HREventListener:
             raise FileNotFoundError(f"CSV file not found: {file_path}")
 
         parser = CSVParser(column_mappings)
-        with open(path, encoding='utf-8') as f:
+        with open(path, encoding="utf-8") as f:
             return parser.parse(f)
 
     def ingest_json_webhook(self, payload: Dict[str, Any]) -> List[HREvent]:
@@ -163,6 +165,7 @@ class HREventListener:
             elif isinstance(data, str):
                 # Try parsing as JSON first
                 import json
+
                 try:
                     json_data = json.loads(data)
                     events.extend(self._fallback_parse(json_data))
@@ -193,24 +196,20 @@ class HREventListener:
         """
         # Common field patterns
         employee_id = (
-            data.get("employee_id") or
-            data.get("id") or
-            data.get("employeeId") or
-            data.get("Employee_ID")
+            data.get("employee_id")
+            or data.get("id")
+            or data.get("employeeId")
+            or data.get("Employee_ID")
         )
 
         name = (
-            data.get("name") or
-            data.get("full_name") or
-            data.get("employee_name") or
-            data.get("Name")
+            data.get("name")
+            or data.get("full_name")
+            or data.get("employee_name")
+            or data.get("Name")
         )
 
-        email = (
-            data.get("email") or
-            data.get("work_email") or
-            data.get("Email")
-        )
+        email = data.get("email") or data.get("work_email") or data.get("Email")
 
         if not all([employee_id, name, email]):
             return None
@@ -233,7 +232,7 @@ class HREventListener:
                 department=str(department),
                 title=str(title),
                 source_system="Unknown",
-                raw_data=data
+                raw_data=data,
             )
         except Exception:
             return None
@@ -245,9 +244,4 @@ class HREventListener:
         Returns:
             List of format names
         """
-        return [
-            "Workday JSON",
-            "BambooHR JSON",
-            "CSV files",
-            "Generic JSON (fallback)"
-        ]
+        return ["Workday JSON", "BambooHR JSON", "CSV files", "Generic JSON (fallback)"]

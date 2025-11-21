@@ -18,8 +18,13 @@ logger = logging.getLogger(__name__)
 class ConnectorResult:
     """Result of a connector operation."""
 
-    def __init__(self, success: bool, message: str = "", data: Optional[Any] = None,
-                 error: Optional[str] = None):
+    def __init__(
+        self,
+        success: bool,
+        message: str = "",
+        data: Optional[Any] = None,
+        error: Optional[str] = None,
+    ):
         self.success = success
         self.message = message
         self.data = data
@@ -49,7 +54,7 @@ class BaseConnector(ABC):
         """
         self.config = config or {}
         self.mock_mode = mock_mode
-        self.system_name = self.__class__.__name__.replace('Connector', '').lower()
+        self.system_name = self.__class__.__name__.replace("Connector", "").lower()
 
         logger.info(f"Initialized {self.__class__.__name__} (mock_mode={mock_mode})")
 
@@ -193,7 +198,7 @@ class MockConnector(BaseConnector):
         # In-memory state for mock operations
         self.users: Dict[str, Dict[str, Any]] = {}
         self.groups: Dict[str, List[str]] = {}  # group_name -> list of user_ids
-        self.roles: Dict[str, List[str]] = {}   # role_name -> list of user_ids
+        self.roles: Dict[str, List[str]] = {}  # role_name -> list of user_ids
 
     def create_user(self, user: UserIdentity) -> ConnectorResult:
         """Mock user creation."""
@@ -207,7 +212,7 @@ class MockConnector(BaseConnector):
             "active": True,
             "created_at": datetime.now(timezone.utc),
             "groups": [],
-            "roles": []
+            "roles": [],
         }
 
         logger.info(f"Mock created user: {user_id}")
@@ -291,17 +296,10 @@ class MockConnector(BaseConnector):
             return ConnectorResult(False, f"User {user_id} not found")
 
         user_data = self.users[user_id]
-        permissions = {
-            "groups": user_data["groups"],
-            "roles": user_data["roles"]
-        }
+        permissions = {"groups": user_data["groups"], "roles": user_data["roles"]}
 
         return ConnectorResult(True, f"Permissions for {user_id}", permissions)
 
     def get_mock_state(self) -> Dict[str, Any]:
         """Get current mock state for inspection."""
-        return {
-            "users": self.users,
-            "groups": self.groups,
-            "roles": self.roles
-        }
+        return {"users": self.users, "groups": self.groups, "roles": self.roles}

@@ -40,7 +40,9 @@ class StateManager:
             self.storage_path.parent.mkdir(parents=True, exist_ok=True)
             self._load_state()
 
-        logger.info(f"Initialized StateManager with {'persistent' if self.storage_path else 'in-memory'} storage")
+        logger.info(
+            f"Initialized StateManager with {'persistent' if self.storage_path else 'in-memory'} storage"
+        )
 
     def get_identity(self, employee_id: str) -> Optional[UserIdentity]:
         """
@@ -69,8 +71,9 @@ class StateManager:
                 return identity
         return None
 
-    def create_or_update_identity(self, hr_event: HREvent,
-                                entitlements: Optional[List[AccessEntitlement]] = None) -> UserIdentity:
+    def create_or_update_identity(
+        self, hr_event: HREvent, entitlements: Optional[List[AccessEntitlement]] = None
+    ) -> UserIdentity:
         """
         Create or update a user identity based on an HR event.
 
@@ -112,7 +115,7 @@ class StateManager:
                 title=hr_event.title,
                 status=self._determine_status_from_event(hr_event),
                 entitlements=entitlements or [],
-                last_hr_event=hr_event
+                last_hr_event=hr_event,
             )
             self.identities[employee_id] = identity
             logger.info(f"Created new identity for employee {employee_id}")
@@ -140,7 +143,9 @@ class StateManager:
         identity.updated_at = datetime.now(timezone.utc)
 
         self._save_state()
-        logger.info(f"Updated entitlements for employee {employee_id}: {len(entitlements)} entitlements")
+        logger.info(
+            f"Updated entitlements for employee {employee_id}: {len(entitlements)} entitlements"
+        )
         return True
 
     def add_entitlement(self, employee_id: str, entitlement: AccessEntitlement) -> bool:
@@ -160,9 +165,11 @@ class StateManager:
 
         # Check if entitlement already exists
         for existing in identity.entitlements:
-            if (existing.system == entitlement.system and
-                existing.resource_type == entitlement.resource_type and
-                existing.resource_name == entitlement.resource_name):
+            if (
+                existing.system == entitlement.system
+                and existing.resource_type == entitlement.resource_type
+                and existing.resource_name == entitlement.resource_name
+            ):
                 logger.debug(f"Entitlement already exists for {employee_id}: {entitlement}")
                 return False
 
@@ -170,7 +177,9 @@ class StateManager:
         identity.updated_at = datetime.now(timezone.utc)
 
         self._save_state()
-        logger.info(f"Added entitlement to {employee_id}: {entitlement.system}/{entitlement.resource_name}")
+        logger.info(
+            f"Added entitlement to {employee_id}: {entitlement.system}/{entitlement.resource_name}"
+        )
         return True
 
     def remove_entitlement(self, employee_id: str, system: str, resource_name: str) -> bool:
@@ -191,7 +200,8 @@ class StateManager:
 
         original_count = len(identity.entitlements)
         identity.entitlements = [
-            ent for ent in identity.entitlements
+            ent
+            for ent in identity.entitlements
             if not (ent.system == system and ent.resource_name == resource_name)
         ]
 
@@ -230,13 +240,13 @@ class StateManager:
 
     def get_identities_by_department(self, department: str) -> List[UserIdentity]:
         """Get all identities in a specific department."""
-        return [identity for identity in self.identities.values()
-                if identity.department == department]
+        return [
+            identity for identity in self.identities.values() if identity.department == department
+        ]
 
     def get_identities_by_status(self, status: UserStatus) -> List[UserIdentity]:
         """Get all identities with a specific status."""
-        return [identity for identity in self.identities.values()
-                if identity.status == status]
+        return [identity for identity in self.identities.values() if identity.status == status]
 
     def get_entitlements_summary(self) -> Dict[str, Any]:
         """
@@ -250,7 +260,7 @@ class StateManager:
             "total_entitlements": 0,
             "entitlements_by_system": {},
             "users_by_department": {},
-            "users_by_status": {}
+            "users_by_status": {},
         }
 
         for identity in self.identities.values():
@@ -304,10 +314,10 @@ class StateManager:
                 "identities": {
                     emp_id: identity.model_dump() for emp_id, identity in self.identities.items()
                 },
-                "last_updated": datetime.now(timezone.utc).isoformat()
+                "last_updated": datetime.now(timezone.utc).isoformat(),
             }
 
-            with open(self.storage_path, 'w', encoding='utf-8') as f:
+            with open(self.storage_path, "w", encoding="utf-8") as f:
                 json.dump(state_data, f, indent=2, default=str)
 
         except Exception as e:
@@ -319,7 +329,7 @@ class StateManager:
             return
 
         try:
-            with open(self.storage_path, encoding='utf-8') as f:
+            with open(self.storage_path, encoding="utf-8") as f:
                 state_data = json.load(f)
 
             identities_data = state_data.get("identities", {})
@@ -328,9 +338,13 @@ class StateManager:
                 # Convert back to UserIdentity
                 # Handle datetime deserialization
                 if "created_at" in identity_data:
-                    identity_data["created_at"] = datetime.fromisoformat(identity_data["created_at"])
+                    identity_data["created_at"] = datetime.fromisoformat(
+                        identity_data["created_at"]
+                    )
                 if "updated_at" in identity_data:
-                    identity_data["updated_at"] = datetime.fromisoformat(identity_data["updated_at"])
+                    identity_data["updated_at"] = datetime.fromisoformat(
+                        identity_data["updated_at"]
+                    )
 
                 # Convert entitlements back to objects
                 entitlements = []
@@ -349,7 +363,9 @@ class StateManager:
 
                 self.identities[emp_id] = UserIdentity(**identity_data)
 
-            logger.info(f"Loaded state for {len(self.identities)} identities from {self.storage_path}")
+            logger.info(
+                f"Loaded state for {len(self.identities)} identities from {self.storage_path}"
+            )
 
         except Exception as e:
             logger.error(f"Failed to load state from {self.storage_path}: {e}")

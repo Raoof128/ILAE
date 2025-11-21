@@ -60,25 +60,21 @@ class HRFormatParser(ABC):
             "New Hire": LifecycleEvent.NEW_STARTER,
             "Employee Hire": LifecycleEvent.NEW_STARTER,
             "Start": LifecycleEvent.NEW_STARTER,
-
             # Termination events
             "Terminate": LifecycleEvent.TERMINATION,
             "Termination": LifecycleEvent.TERMINATION,
             "Employee Termination": LifecycleEvent.TERMINATION,
             "End Employment": LifecycleEvent.TERMINATION,
-
             # Transfer/Promotion
             "Transfer": LifecycleEvent.DEPARTMENT_CHANGE,
             "Department Change": LifecycleEvent.DEPARTMENT_CHANGE,
             "Promotion": LifecycleEvent.ROLE_CHANGE,
             "Job Change": LifecycleEvent.ROLE_CHANGE,
             "Role Change": LifecycleEvent.ROLE_CHANGE,
-
             # Leave events
             "Leave of Absence": LifecycleEvent.LEAVE_OF_ABSENCE,
             "LOA": LifecycleEvent.LEAVE_OF_ABSENCE,
             "Return from Leave": LifecycleEvent.RETURN_FROM_LEAVE,
-
             # Contractor events
             "Contractor Offboarding": LifecycleEvent.CONTRACTOR_OFFBOARDING,
             "Contract End": LifecycleEvent.CONTRACTOR_OFFBOARDING,

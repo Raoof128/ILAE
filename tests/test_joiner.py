@@ -22,13 +22,7 @@ class TestJoinerWorkflow:
         """Mock configuration for testing."""
         return {
             "mock_mode": True,
-            "connectors": {
-                "aws": {},
-                "azure": {},
-                "github": {},
-                "google": {},
-                "slack": {}
-            }
+            "connectors": {"aws": {}, "azure": {}, "github": {}, "google": {}, "slack": {}},
         }
 
     @pytest.fixture
@@ -41,7 +35,7 @@ class TestJoinerWorkflow:
             email="john.doe@company.com",
             department="Engineering",
             title="Software Engineer",
-            source_system="TEST"
+            source_system="TEST",
         )
 
     @pytest.fixture
@@ -67,16 +61,17 @@ class TestJoinerWorkflow:
             email="john.doe@company.com",
             department="Engineering",
             title="Software Engineer",
-            source_system="TEST"
+            source_system="TEST",
         )
 
         with pytest.raises(ValueError, match="Joiner workflow can only process NEW_STARTER events"):
             workflow.execute(invalid_event)
 
-    @patch('jml_engine.workflows.base_workflow.PolicyMapper')
-    @patch('jml_engine.workflows.base_workflow.StateManager')
-    def test_successful_workflow_execution(self, mock_state_manager, mock_policy_mapper,
-                                         workflow, sample_hr_event):
+    @patch("jml_engine.workflows.base_workflow.PolicyMapper")
+    @patch("jml_engine.workflows.base_workflow.StateManager")
+    def test_successful_workflow_execution(
+        self, mock_state_manager, mock_policy_mapper, workflow, sample_hr_event
+    ):
         """Test successful execution of joiner workflow."""
         # Mock the policy mapper
         mock_policy_instance = Mock()
@@ -85,7 +80,7 @@ class TestJoinerWorkflow:
             azure_groups=["Engineering"],
             github_teams=["developers"],
             google_groups=["employees"],
-            slack_channels=["engineering"]
+            slack_channels=["engineering"],
         )
         mock_policy_mapper.return_value = mock_policy_instance
 
@@ -99,11 +94,11 @@ class TestJoinerWorkflow:
 
         # Mock connectors to succeed
         workflow.connectors = {
-            'aws': Mock(),
-            'azure': Mock(),
-            'github': Mock(),
-            'google': Mock(),
-            'slack': Mock()
+            "aws": Mock(),
+            "azure": Mock(),
+            "github": Mock(),
+            "google": Mock(),
+            "slack": Mock(),
         }
 
         for connector in workflow.connectors.values():
@@ -135,7 +130,7 @@ class TestJoinerWorkflow:
             azure_groups=[],
             github_teams=[],
             google_groups=[],
-            slack_channels=[]
+            slack_channels=[],
         )
 
         workflow.state_manager.get_identity.return_value = None
@@ -144,19 +139,17 @@ class TestJoinerWorkflow:
 
         # Mock connectors - AWS succeeds, others fail
         workflow.connectors = {
-            'aws': Mock(),
-            'azure': Mock(),
-            'github': Mock(),
-            'google': Mock(),
-            'slack': Mock()
+            "aws": Mock(),
+            "azure": Mock(),
+            "github": Mock(),
+            "google": Mock(),
+            "slack": Mock(),
         }
 
-        workflow.connectors['aws'].create_user.return_value = Mock(success=True, message="Success")
-        for name in ['azure', 'github', 'google', 'slack']:
+        workflow.connectors["aws"].create_user.return_value = Mock(success=True, message="Success")
+        for name in ["azure", "github", "google", "slack"]:
             workflow.connectors[name].create_user.return_value = Mock(
-                success=False,
-                message=f"{name} failed",
-                error="Connection error"
+                success=False, message=f"{name} failed", error="Connection error"
             )
 
         # Execute workflow
@@ -178,7 +171,7 @@ class TestJoinerWorkflow:
             email="invalid-email",  # Invalid: no @ symbol
             department="Engineering",
             title="Software Engineer",
-            source_system="TEST"
+            source_system="TEST",
         )
 
         # This should not raise an exception in the workflow itself
@@ -190,11 +183,14 @@ class TestJoinerWorkflow:
         assert isinstance(result, WorkflowResult)
         assert result.employee_id == invalid_event.employee_id
 
-    @pytest.mark.parametrize("department,title,expected_aws_roles", [
-        ("Engineering", "Software Engineer", ["EC2ReadOnly", "DevOpsRole"]),
-        ("HR", "HR Manager", ["ReadOnlyAccess"]),
-        ("Finance", "Accountant", ["ReadOnlyAccess"]),
-    ])
+    @pytest.mark.parametrize(
+        "department,title,expected_aws_roles",
+        [
+            ("Engineering", "Software Engineer", ["EC2ReadOnly", "DevOpsRole"]),
+            ("HR", "HR Manager", ["ReadOnlyAccess"]),
+            ("Finance", "Accountant", ["ReadOnlyAccess"]),
+        ],
+    )
     def test_access_profile_resolution(self, workflow, department, title, expected_aws_roles):
         """Test that access profiles are resolved correctly."""
         hr_event = HREvent(
@@ -204,18 +200,18 @@ class TestJoinerWorkflow:
             email="test@company.com",
             department=department,
             title=title,
-            source_system="TEST"
+            source_system="TEST",
         )
 
         # Test the policy resolution
         access_profile = workflow.policy_mapper.get_access_profile_from_event(hr_event)
 
         # Verify that the profile has the expected structure
-        assert hasattr(access_profile, 'aws_roles')
-        assert hasattr(access_profile, 'azure_groups')
-        assert hasattr(access_profile, 'github_teams')
-        assert hasattr(access_profile, 'google_groups')
-        assert hasattr(access_profile, 'slack_channels')
+        assert hasattr(access_profile, "aws_roles")
+        assert hasattr(access_profile, "azure_groups")
+        assert hasattr(access_profile, "github_teams")
+        assert hasattr(access_profile, "google_groups")
+        assert hasattr(access_profile, "slack_channels")
 
     def test_workflow_id_uniqueness(self):
         """Test that workflow IDs are unique."""
@@ -262,7 +258,7 @@ class TestJoinerWorkflow:
             azure_groups=[],
             github_teams=[],
             google_groups=[],
-            slack_channels=[]
+            slack_channels=[],
         )
 
         workflow.state_manager.get_identity.return_value = None
@@ -270,8 +266,8 @@ class TestJoinerWorkflow:
         workflow.state_manager.update_entitlements.return_value = True
 
         # Mock connector
-        workflow.connectors = {'aws': Mock()}
-        workflow.connectors['aws'].create_user.return_value = Mock(success=True, message="Success")
+        workflow.connectors = {"aws": Mock()}
+        workflow.connectors["aws"].create_user.return_value = Mock(success=True, message="Success")
 
         # Execute
         workflow.execute(sample_hr_event)

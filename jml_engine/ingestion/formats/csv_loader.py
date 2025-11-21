@@ -50,8 +50,8 @@ class CSVParser(HRFormatParser):
         """Check if data is CSV content."""
         if isinstance(data, str):
             # Check if it looks like CSV (contains commas and newlines)
-            return ',' in data and '\n' in data
-        elif hasattr(data, 'read'):  # File-like object
+            return "," in data and "\n" in data
+        elif hasattr(data, "read"):  # File-like object
             return True
         return False
 
@@ -71,7 +71,7 @@ class CSVParser(HRFormatParser):
             # Handle different input types
             if isinstance(data, str):
                 csv_reader = csv.DictReader(io.StringIO(data))
-            elif hasattr(data, 'read'):
+            elif hasattr(data, "read"):
                 csv_reader = csv.DictReader(data)
             else:
                 raise ValueError("Unsupported data type for CSV parsing")
@@ -147,7 +147,7 @@ class CSVParser(HRFormatParser):
                 previous_department=previous_department if previous_department else None,
                 previous_title=previous_title if previous_title else None,
                 source_system="CSV",
-                raw_data=row
+                raw_data=row,
             )
 
         except Exception as e:

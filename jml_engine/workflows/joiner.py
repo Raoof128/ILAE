@@ -34,7 +34,9 @@ class JoinerWorkflow(BaseWorkflow):
             WorkflowResult with execution details
         """
         if hr_event.event != LifecycleEvent.NEW_STARTER:
-            raise ValueError(f"Joiner workflow can only process NEW_STARTER events, got {hr_event.event}")
+            raise ValueError(
+                f"Joiner workflow can only process NEW_STARTER events, got {hr_event.event}"
+            )
 
         self.started_at = datetime.now(timezone.utc)
         logger.info(f"Starting joiner workflow for employee {hr_event.employee_id}")
@@ -65,10 +67,12 @@ class JoinerWorkflow(BaseWorkflow):
                 completed_at=self.completed_at,
                 success=len(self.errors) == 0,
                 actions_taken=[step.to_dict() for step in self.steps],
-                errors=self.errors.copy()
+                errors=self.errors.copy(),
             )
 
-            logger.info(f"Completed joiner workflow for {hr_event.employee_id}: {len(self.steps)} steps, {len(self.errors)} errors")
+            logger.info(
+                f"Completed joiner workflow for {hr_event.employee_id}: {len(self.steps)} steps, {len(self.errors)} errors"
+            )
             return result
 
         except Exception as e:
@@ -84,7 +88,7 @@ class JoinerWorkflow(BaseWorkflow):
                 completed_at=self.completed_at,
                 success=False,
                 actions_taken=[step.to_dict() for step in self.steps],
-                errors=self.errors.copy()
+                errors=self.errors.copy(),
             )
 
     def _execute_provisioning_steps(self, hr_event: HREvent, access_profile: Any):
@@ -103,17 +107,17 @@ class JoinerWorkflow(BaseWorkflow):
 
     def _create_user_accounts(self, hr_event: HREvent):
         """Create user accounts in all target systems."""
-        systems_to_create = ['aws', 'azure', 'github', 'google', 'slack']
+        systems_to_create = ["aws", "azure", "github", "google", "slack"]
 
         for system in systems_to_create:
             step = WorkflowStep(
                 system=system,
-                operation='create_user',
-                resource='user_account',
+                operation="create_user",
+                resource="user_account",
                 parameters={
-                    'user': hr_event,  # Pass the full HR event as user data
-                    'user_id': hr_event.employee_id
-                }
+                    "user": hr_event,  # Pass the full HR event as user data
+                    "user_id": hr_event.employee_id,
+                },
             )
 
             self.steps.append(step)
@@ -128,7 +132,7 @@ class JoinerWorkflow(BaseWorkflow):
                 action="create_user",
                 resource="user_account",
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
     def _assign_access_entitlements(self, hr_event: HREvent, access_profile: Any):
@@ -142,13 +146,10 @@ class JoinerWorkflow(BaseWorkflow):
         # AWS IAM roles
         for role in access_profile.aws_roles:
             step = WorkflowStep(
-                system='aws',
-                operation='grant_role',
+                system="aws",
+                operation="grant_role",
                 resource=role,
-                parameters={
-                    'user_id': hr_event.employee_id,
-                    'role_name': role
-                }
+                parameters={"user_id": hr_event.employee_id, "role_name": role},
             )
             self.steps.append(step)
             success = self._execute_step(step)
@@ -161,19 +162,16 @@ class JoinerWorkflow(BaseWorkflow):
                 action="grant_role",
                 resource=role,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
         # Azure groups
         for group in access_profile.azure_groups:
             step = WorkflowStep(
-                system='azure',
-                operation='add_to_group',
+                system="azure",
+                operation="add_to_group",
                 resource=group,
-                parameters={
-                    'user_id': hr_event.employee_id,
-                    'group_name': group
-                }
+                parameters={"user_id": hr_event.employee_id, "group_name": group},
             )
             self.steps.append(step)
             success = self._execute_step(step)
@@ -186,19 +184,19 @@ class JoinerWorkflow(BaseWorkflow):
                 action="add_to_group",
                 resource=group,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
         # GitHub teams
         for team in access_profile.github_teams:
             step = WorkflowStep(
-                system='github',
-                operation='add_to_group',
+                system="github",
+                operation="add_to_group",
                 resource=team,
                 parameters={
-                    'user_id': hr_event.employee_id,  # This should be GitHub username
-                    'group_name': team
-                }
+                    "user_id": hr_event.employee_id,  # This should be GitHub username
+                    "group_name": team,
+                },
             )
             self.steps.append(step)
             success = self._execute_step(step)
@@ -211,19 +209,16 @@ class JoinerWorkflow(BaseWorkflow):
                 action="add_to_team",
                 resource=team,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
         # Google Workspace groups
         for group in access_profile.google_groups:
             step = WorkflowStep(
-                system='google',
-                operation='add_to_group',
+                system="google",
+                operation="add_to_group",
                 resource=group,
-                parameters={
-                    'user_id': hr_event.email,  # Use email for Google
-                    'group_name': group
-                }
+                parameters={"user_id": hr_event.email, "group_name": group},  # Use email for Google
             )
             self.steps.append(step)
             success = self._execute_step(step)
@@ -236,19 +231,19 @@ class JoinerWorkflow(BaseWorkflow):
                 action="add_to_group",
                 resource=group,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
         # Slack channels
         for channel in access_profile.slack_channels:
             step = WorkflowStep(
-                system='slack',
-                operation='add_to_group',
+                system="slack",
+                operation="add_to_group",
                 resource=channel,
                 parameters={
-                    'user_id': hr_event.email,  # Use email for Slack
-                    'group_name': channel
-                }
+                    "user_id": hr_event.email,  # Use email for Slack
+                    "group_name": channel,
+                },
             )
             self.steps.append(step)
             success = self._execute_step(step)
@@ -261,5 +256,5 @@ class JoinerWorkflow(BaseWorkflow):
                 action="add_to_channel",
                 resource=channel,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )

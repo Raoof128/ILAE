@@ -16,6 +16,7 @@ try:
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
+
     GOOGLE_SDK_AVAILABLE = True
 except ImportError:
     GOOGLE_SDK_AVAILABLE = False
@@ -39,31 +40,31 @@ class GoogleConnector(BaseConnector):
 
         if not mock_mode and GOOGLE_SDK_AVAILABLE:
             # Initialize Google API clients
-            credentials_path = config.get('credentials_path') or config.get('service_account_file')
+            credentials_path = config.get("credentials_path") or config.get("service_account_file")
             if not credentials_path:
                 raise ValueError("Google service account credentials path is required")
 
             credentials = service_account.Credentials.from_service_account_file(
                 credentials_path,
                 scopes=[
-                    'https://www.googleapis.com/auth/admin.directory.user',
-                    'https://www.googleapis.com/auth/admin.directory.group',
-                    'https://www.googleapis.com/auth/admin.directory.group.member'
-                ]
+                    "https://www.googleapis.com/auth/admin.directory.user",
+                    "https://www.googleapis.com/auth/admin.directory.group",
+                    "https://www.googleapis.com/auth/admin.directory.group.member",
+                ],
             )
 
             # Impersonate domain admin
-            domain_admin = config.get('domain_admin')
+            domain_admin = config.get("domain_admin")
             if domain_admin:
                 credentials = credentials.with_subject(domain_admin)
 
-            self.directory_service = build('admin', 'directory_v1', credentials=credentials)
-            self.domain = config.get('domain')
+            self.directory_service = build("admin", "directory_v1", credentials=credentials)
+            self.domain = config.get("domain")
             if not self.domain:
                 raise ValueError("Google Workspace domain is required")
         else:
             self.directory_service = None
-            self.domain = config.get('domain', 'mock-domain.com') if config else 'mock-domain.com'
+            self.domain = config.get("domain", "mock-domain.com") if config else "mock-domain.com"
 
     def create_user(self, user: UserIdentity) -> ConnectorResult:
         """Create user in Google Workspace."""
@@ -72,21 +73,24 @@ class GoogleConnector(BaseConnector):
 
         try:
             user_body = {
-                'primaryEmail': user.email,
-                'name': {
-                    'givenName': user.name.split()[0] if user.name else '',
-                    'familyName': ' '.join(user.name.split()[1:]) if user.name and len(user.name.split()) > 1 else ''
+                "primaryEmail": user.email,
+                "name": {
+                    "givenName": user.name.split()[0] if user.name else "",
+                    "familyName": " ".join(user.name.split()[1:])
+                    if user.name and len(user.name.split()) > 1
+                    else "",
                 },
-                'password': self._generate_temp_password(),
-                'changePasswordAtNextLogin': True,
-                'orgUnitPath': self._get_org_unit_path(user.department)
+                "password": self._generate_temp_password(),
+                "changePasswordAtNextLogin": True,
+                "orgUnitPath": self._get_org_unit_path(user.department),
             }
 
             result = self.directory_service.users().insert(body=user_body).execute()
 
             logger.info(f"Created Google Workspace user: {user.email}")
-            return ConnectorResult(True, f"Created Google Workspace user {user.email}",
-                                 {"user_id": result.get('id')})
+            return ConnectorResult(
+                True, f"Created Google Workspace user {user.email}", {"user_id": result.get("id")}
+            )
 
         except HttpError as e:
             error_msg = f"Failed to create Google Workspace user {user.email}: {e}"
@@ -100,7 +104,7 @@ class GoogleConnector(BaseConnector):
 
         try:
             # Suspend user instead of deleting (Google recommends suspension)
-            user_body = {'suspended': True}
+            user_body = {"suspended": True}
             self.directory_service.users().update(userKey=user_id, body=user_body).execute()
 
             logger.info(f"Suspended Google Workspace user: {user_id}")
@@ -122,13 +126,12 @@ class GoogleConnector(BaseConnector):
 
             # Add member to group
             member_body = {
-                'email': user_id if '@' in user_id else f"{user_id}@{self.domain}",
-                'role': 'MEMBER'
+                "email": user_id if "@" in user_id else f"{user_id}@{self.domain}",
+                "role": "MEMBER",
             }
 
             self.directory_service.members().insert(
-                groupKey=group_email,
-                body=member_body
+                groupKey=group_email, body=member_body
             ).execute()
 
             logger.info(f"Added {user_id} to Google Group {group_name}")
@@ -147,11 +150,10 @@ class GoogleConnector(BaseConnector):
         try:
             group_email = f"{group_name}@{self.domain}"
 
-            member_email = user_id if '@' in user_id else f"{user_id}@{self.domain}"
+            member_email = user_id if "@" in user_id else f"{user_id}@{self.domain}"
 
             self.directory_service.members().delete(
-                groupKey=group_email,
-                memberKey=member_email
+                groupKey=group_email, memberKey=member_email
             ).execute()
 
             logger.info(f"Removed {user_id} from Google Group {group_name}")
@@ -183,7 +185,7 @@ class GoogleConnector(BaseConnector):
                 "primaryEmail": result.get("primaryEmail"),
                 "name": result.get("name", {}),
                 "suspended": result.get("suspended", False),
-                "orgUnitPath": result.get("orgUnitPath")
+                "orgUnitPath": result.get("orgUnitPath"),
             }
 
             return ConnectorResult(True, f"Found Google Workspace user {user_id}", user_data)
@@ -201,23 +203,22 @@ class GoogleConnector(BaseConnector):
             return GoogleMockConnector(self.config).list_user_permissions(user_id)
 
         try:
-            member_email = user_id if '@' in user_id else f"{user_id}@{self.domain}"
+            member_email = user_id if "@" in user_id else f"{user_id}@{self.domain}"
 
             # Get all groups for the user
             result = self.directory_service.groups().list(userKey=member_email).execute()
 
             groups = []
-            for group in result.get('groups', []):
-                groups.append({
-                    "email": group.get("email"),
-                    "name": group.get("name"),
-                    "description": group.get("description")
-                })
+            for group in result.get("groups", []):
+                groups.append(
+                    {
+                        "email": group.get("email"),
+                        "name": group.get("name"),
+                        "description": group.get("description"),
+                    }
+                )
 
-            permissions = {
-                "groups": groups,
-                "org_unit": None  # Would need separate API call
-            }
+            permissions = {"groups": groups, "org_unit": None}  # Would need separate API call
 
             return ConnectorResult(True, f"Permissions for {user_id}", permissions)
 
@@ -238,9 +239,9 @@ class GoogleConnector(BaseConnector):
             if e.resp.status == 404:
                 # Create the group
                 group_body = {
-                    'email': group_email,
-                    'name': group_name,
-                    'description': f"Auto-created group for {group_name}"
+                    "email": group_email,
+                    "name": group_name,
+                    "description": f"Auto-created group for {group_name}",
                 }
                 self.directory_service.groups().insert(body=group_body).execute()
                 logger.info(f"Created Google Group: {group_email}")
@@ -260,8 +261,9 @@ class GoogleConnector(BaseConnector):
         # In production, you'd want a more secure password generation
         import secrets
         import string
+
         alphabet = string.ascii_letters + string.digits
-        return ''.join(secrets.choice(alphabet) for i in range(12))
+        return "".join(secrets.choice(alphabet) for i in range(12))
 
 
 class GoogleMockConnector(MockConnector):
@@ -272,4 +274,4 @@ class GoogleMockConnector(MockConnector):
 
         # Google-specific mock state
         self.groups: Dict[str, List[str]] = {}  # group_name -> list of user_ids
-        self.org_units: Dict[str, str] = {}     # user_id -> org_unit_path
+        self.org_units: Dict[str, str] = {}  # user_id -> org_unit_path

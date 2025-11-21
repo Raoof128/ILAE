@@ -15,6 +15,7 @@ from .base_connector import BaseConnector, ConnectorResult, MockConnector
 try:
     from slack_sdk import WebClient
     from slack_sdk.errors import SlackApiError
+
     SLACK_SDK_AVAILABLE = True
 except ImportError:
     SLACK_SDK_AVAILABLE = False
@@ -36,15 +37,17 @@ class SlackConnector(BaseConnector):
         super().__init__(config, mock_mode)
 
         if not mock_mode and SLACK_SDK_AVAILABLE:
-            token = config.get('slack_token') or config.get('token')
+            token = config.get("slack_token") or config.get("token")
             if not token:
                 raise ValueError("Slack token is required for real mode")
 
             self.client = WebClient(token=token)
-            self.workspace_id = config.get('workspace_id')
+            self.workspace_id = config.get("workspace_id")
         else:
             self.client = None
-            self.workspace_id = config.get('workspace_id', 'mock-workspace') if config else 'mock-workspace'
+            self.workspace_id = (
+                config.get("workspace_id", "mock-workspace") if config else "mock-workspace"
+            )
 
     def create_user(self, user: UserIdentity) -> ConnectorResult:
         """Invite user to Slack workspace."""
@@ -57,7 +60,7 @@ class SlackConnector(BaseConnector):
                 email=user.email,
                 channels=self._get_default_channels(),
                 real_name=user.name,
-                resend=True
+                resend=True,
             )
 
             if response["ok"]:
@@ -109,16 +112,15 @@ class SlackConnector(BaseConnector):
                 if not channel_id:
                     return ConnectorResult(False, f"Could not find or create channel {group_name}")
 
-            response = self.client.conversations_invite(
-                channel=channel_id,
-                users=[user_id]
-            )
+            response = self.client.conversations_invite(channel=channel_id, users=[user_id])
 
             if response["ok"]:
                 logger.info(f"Added {user_id} to Slack channel {group_name}")
                 return ConnectorResult(True, f"Added {user_id} to channel {group_name}")
             else:
-                error_msg = f"Failed to add {user_id} to channel {group_name}: {response.get('error')}"
+                error_msg = (
+                    f"Failed to add {user_id} to channel {group_name}: {response.get('error')}"
+                )
                 logger.error(error_msg)
                 return ConnectorResult(False, error_msg)
 
@@ -137,16 +139,15 @@ class SlackConnector(BaseConnector):
             if not channel_id:
                 return ConnectorResult(False, f"Channel {group_name} not found")
 
-            response = self.client.conversations_kick(
-                channel=channel_id,
-                user=user_id
-            )
+            response = self.client.conversations_kick(channel=channel_id, user=user_id)
 
             if response["ok"]:
                 logger.info(f"Removed {user_id} from Slack channel {group_name}")
                 return ConnectorResult(True, f"Removed {user_id} from channel {group_name}")
             else:
-                error_msg = f"Failed to remove {user_id} from channel {group_name}: {response.get('error')}"
+                error_msg = (
+                    f"Failed to remove {user_id} from channel {group_name}: {response.get('error')}"
+                )
                 logger.error(error_msg)
                 return ConnectorResult(False, error_msg)
 
@@ -175,7 +176,9 @@ class SlackConnector(BaseConnector):
                 user_data = response["user"]
                 return ConnectorResult(True, f"Found Slack user {user_id}", user_data)
             else:
-                return ConnectorResult(False, f"Slack user {user_id} not found: {response.get('error')}")
+                return ConnectorResult(
+                    False, f"Slack user {user_id} not found: {response.get('error')}"
+                )
 
         except SlackApiError as e:
             if e.response["error"]["error"] == "user_not_found":
@@ -192,24 +195,22 @@ class SlackConnector(BaseConnector):
         try:
             # Get user's channel memberships
             response = self.client.users_conversations(
-                user=user_id,
-                types="public_channel,private_channel"
+                user=user_id, types="public_channel,private_channel"
             )
 
             if response["ok"]:
                 channels = []
                 for channel in response.get("channels", []):
-                    channels.append({
-                        "id": channel["id"],
-                        "name": channel["name"],
-                        "is_private": channel.get("is_private", False),
-                        "is_member": True
-                    })
+                    channels.append(
+                        {
+                            "id": channel["id"],
+                            "name": channel["name"],
+                            "is_private": channel.get("is_private", False),
+                            "is_member": True,
+                        }
+                    )
 
-                permissions = {
-                    "channels": channels,
-                    "workspace_member": True
-                }
+                permissions = {"channels": channels, "workspace_member": True}
 
                 return ConnectorResult(True, f"Permissions for {user_id}", permissions)
             else:
@@ -226,12 +227,10 @@ class SlackConnector(BaseConnector):
         """Get channel ID by name."""
         try:
             # Remove # prefix if present
-            if channel_name.startswith('#'):
+            if channel_name.startswith("#"):
                 channel_name = channel_name[1:]
 
-            response = self.client.conversations_list(
-                types="public_channel,private_channel"
-            )
+            response = self.client.conversations_list(types="public_channel,private_channel")
 
             if response["ok"]:
                 for channel in response.get("channels", []):
@@ -247,13 +246,10 @@ class SlackConnector(BaseConnector):
         """Create a new channel and return its ID."""
         try:
             # Remove # prefix if present
-            if channel_name.startswith('#'):
+            if channel_name.startswith("#"):
                 channel_name = channel_name[1:]
 
-            response = self.client.conversations_create(
-                name=channel_name,
-                is_private=False
-            )
+            response = self.client.conversations_create(name=channel_name, is_private=False)
 
             if response["ok"]:
                 channel_id = response["channel"]["id"]

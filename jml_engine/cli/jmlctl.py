@@ -23,7 +23,9 @@ from ..models import HREvent
 from ..workflows import JoinerWorkflow, LeaverWorkflow, MoverWorkflow, validate_hr_event
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Rich console for pretty output
@@ -44,8 +46,8 @@ class JMLController:
         # Initialize components
         self.hr_listener = HREventListener()
         self.policy_mapper = PolicyMapper()
-        self.state_manager = StateManager(self.config.get('state_file'))
-        self.audit_logger = AuditLogger(self.config.get('audit_dir', 'audit'))
+        self.state_manager = StateManager(self.config.get("state_file"))
+        self.audit_logger = AuditLogger(self.config.get("audit_dir", "audit"))
         self.evidence_store = EvidenceStore()
 
         console.print(f"[green]JML Engine initialized (mock_mode={mock_mode})[/green]")
@@ -54,13 +56,7 @@ class JMLController:
         """Load configuration from file or use defaults."""
         config = {
             "mock_mode": self.mock_mode,
-            "connectors": {
-                "aws": {},
-                "azure": {},
-                "github": {},
-                "google": {},
-                "slack": {}
-            }
+            "connectors": {"aws": {}, "azure": {}, "github": {}, "google": {}, "slack": {}},
         }
 
         if self.config_path and self.config_path.exists():
@@ -76,21 +72,21 @@ class JMLController:
 
 
 @click.group()
-@click.option('--config', '-c', help='Path to configuration file')
-@click.option('--mock/--real', default=True, help='Use mock mode (default) or real API connections')
+@click.option("--config", "-c", help="Path to configuration file")
+@click.option("--mock/--real", default=True, help="Use mock mode (default) or real API connections")
 @click.pass_context
 def cli(ctx, config, mock):
     """JML Engine Control CLI - Enterprise IAM Lifecycle Automation"""
     ctx.ensure_object(dict)
-    ctx.obj['controller'] = JMLController(config, mock)
+    ctx.obj["controller"] = JMLController(config, mock)
 
 
 @cli.command()
-@click.argument('event_file', type=click.Path(exists=True))
+@click.argument("event_file", type=click.Path(exists=True))
 @click.pass_context
 def process_event(ctx, event_file):
     """Process an HR event from a JSON file."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     try:
         # Load event from file
@@ -110,9 +106,12 @@ def process_event(ctx, event_file):
 
         # Determine workflow type
         from ..workflows.helpers import determine_workflow_type
+
         workflow_type = determine_workflow_type(hr_event)
 
-        console.print(f"[blue]Processing {workflow_type} workflow for {hr_event.employee_id}[/blue]")
+        console.print(
+            f"[blue]Processing {workflow_type} workflow for {hr_event.employee_id}[/blue]"
+        )
 
         # Execute workflow
         if workflow_type == "joiner":
@@ -142,8 +141,12 @@ def process_event(ctx, event_file):
         table.add_row("Employee ID", result.employee_id)
         table.add_row("Event Type", result.event_type)
         table.add_row("Total Steps", str(len(result.actions_taken)))
-        table.add_row("Successful Steps", str(sum(1 for a in result.actions_taken if a.get('success', False))))
-        table.add_row("Failed Steps", str(sum(1 for a in result.actions_taken if not a.get('success', False))))
+        table.add_row(
+            "Successful Steps", str(sum(1 for a in result.actions_taken if a.get("success", False)))
+        )
+        table.add_row(
+            "Failed Steps", str(sum(1 for a in result.actions_taken if not a.get("success", False)))
+        )
 
         console.print(table)
 
@@ -158,16 +161,20 @@ def process_event(ctx, event_file):
 
 
 @cli.command()
-@click.option('--event-type', type=click.Choice(['NEW_STARTER', 'ROLE_CHANGE', 'TERMINATION']), default='NEW_STARTER')
-@click.option('--employee-id', prompt='Employee ID')
-@click.option('--name', prompt='Full Name')
-@click.option('--email', prompt='Email Address')
-@click.option('--department', prompt='Department')
-@click.option('--title', prompt='Job Title')
+@click.option(
+    "--event-type",
+    type=click.Choice(["NEW_STARTER", "ROLE_CHANGE", "TERMINATION"]),
+    default="NEW_STARTER",
+)
+@click.option("--employee-id", prompt="Employee ID")
+@click.option("--name", prompt="Full Name")
+@click.option("--email", prompt="Email Address")
+@click.option("--department", prompt="Department")
+@click.option("--title", prompt="Job Title")
 @click.pass_context
 def simulate(ctx, event_type, employee_id, name, email, department, title):
     """Simulate an HR event for testing."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     try:
         # Create HR event
@@ -178,7 +185,7 @@ def simulate(ctx, event_type, employee_id, name, email, department, title):
             email=email,
             department=department,
             title=title,
-            source_system="CLI_SIMULATION"
+            source_system="CLI_SIMULATION",
         )
 
         # Add additional fields for mover events
@@ -190,6 +197,7 @@ def simulate(ctx, event_type, employee_id, name, email, department, title):
 
         # Execute appropriate workflow
         from ..workflows.helpers import determine_workflow_type
+
         workflow_type = determine_workflow_type(hr_event)
 
         if workflow_type == "joiner":
@@ -210,11 +218,11 @@ def simulate(ctx, event_type, employee_id, name, email, department, title):
 
 
 @cli.command()
-@click.argument('employee_id')
+@click.argument("employee_id")
 @click.pass_context
 def show_user(ctx, employee_id):
     """Show user identity and entitlements."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     identity = controller.state_manager.get_identity(employee_id)
     if not identity:
@@ -241,10 +249,7 @@ def show_user(ctx, employee_id):
 
         for ent in identity.entitlements:
             table.add_row(
-                ent.system,
-                ent.resource_type,
-                ent.resource_name,
-                ent.permission_level or "N/A"
+                ent.system, ent.resource_type, ent.resource_name, ent.permission_level or "N/A"
             )
 
         console.print(table)
@@ -253,13 +258,13 @@ def show_user(ctx, employee_id):
 
 
 @cli.command()
-@click.option('--department', help='Filter by department')
-@click.option('--status', help='Filter by status')
-@click.option('--limit', default=50, help='Maximum number of users to show')
+@click.option("--department", help="Filter by department")
+@click.option("--status", help="Filter by status")
+@click.option("--limit", default=50, help="Maximum number of users to show")
 @click.pass_context
 def list_users(ctx, department, status, limit):
     """List user identities."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     identities = controller.state_manager.get_all_identities()
 
@@ -290,19 +295,19 @@ def list_users(ctx, department, status, limit):
             identity.email,
             identity.department,
             identity.title,
-            identity.status.value
+            identity.status.value,
         )
 
     console.print(table)
 
 
 @cli.command()
-@click.argument('employee_id')
-@click.option('--days', default=90, help='Number of days to look back')
+@click.argument("employee_id")
+@click.option("--days", default=90, help="Number of days to look back")
 @click.pass_context
 def audit_trail(ctx, employee_id, days):
     """Show audit trail for a user."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     try:
         audit_records = controller.audit_logger.get_audit_trail(employee_id, days)
@@ -327,7 +332,7 @@ def audit_trail(ctx, employee_id, days):
                 record.system,
                 record.action,
                 record.resource,
-                success_icon
+                success_icon,
             )
 
         console.print(table)
@@ -340,7 +345,7 @@ def audit_trail(ctx, employee_id, days):
 @click.pass_context
 def stats(ctx):
     """Show system statistics."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     try:
         identity_stats = controller.state_manager.get_identities_summary()
@@ -351,14 +356,14 @@ def stats(ctx):
         console.print(f"Total Users: {identity_stats['total_users']}")
         console.print(f"Total Entitlements: {identity_stats['total_entitlements']}")
 
-        if identity_stats['users_by_department']:
+        if identity_stats["users_by_department"]:
             console.print("\nUsers by Department:")
-            for dept, count in identity_stats['users_by_department'].items():
+            for dept, count in identity_stats["users_by_department"].items():
                 console.print(f"  {dept}: {count}")
 
-        if identity_stats['users_by_status']:
+        if identity_stats["users_by_status"]:
             console.print("\nUsers by Status:")
-            for status, count in identity_stats['users_by_status'].items():
+            for status, count in identity_stats["users_by_status"].items():
                 console.print(f"  {status}: {count}")
 
         # Display evidence stats
@@ -366,9 +371,9 @@ def stats(ctx):
         console.print(f"Total Evidence Files: {evidence_stats['total_files']}")
         console.print(f"Total Size: {evidence_stats['total_size_bytes']:,} bytes")
 
-        if evidence_stats['files_by_system']:
+        if evidence_stats["files_by_system"]:
             console.print("\nEvidence by System:")
-            for system, count in evidence_stats['files_by_system'].items():
+            for system, count in evidence_stats["files_by_system"].items():
                 console.print(f"  {system}: {count}")
 
     except Exception as e:
@@ -376,13 +381,13 @@ def stats(ctx):
 
 
 @cli.command()
-@click.option('--start-date', help='Start date (YYYY-MM-DD)')
-@click.option('--end-date', help='End date (YYYY-MM-DD)')
-@click.option('--frameworks', help='Compliance frameworks (comma-separated)')
+@click.option("--start-date", help="Start date (YYYY-MM-DD)")
+@click.option("--end-date", help="End date (YYYY-MM-DD)")
+@click.option("--frameworks", help="Compliance frameworks (comma-separated)")
 @click.pass_context
 def compliance_report(ctx, start_date, end_date, frameworks):
     """Generate compliance report."""
-    controller = ctx.obj['controller']
+    controller = ctx.obj["controller"]
 
     from datetime import datetime, timedelta, timezone
 
@@ -401,7 +406,7 @@ def compliance_report(ctx, start_date, end_date, frameworks):
     if not frameworks:
         frameworks = ["ISO_27001", "SOC2", "APRA_CPS_234", "Essential_8"]
     else:
-        frameworks = [f.strip() for f in frameworks.split(',')]
+        frameworks = [f.strip() for f in frameworks.split(",")]
 
     try:
         report = controller.audit_logger.generate_compliance_report(
@@ -409,7 +414,9 @@ def compliance_report(ctx, start_date, end_date, frameworks):
         )
 
         console.print("[bold blue]Compliance Report[/bold blue]")
-        console.print(f"Period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+        console.print(
+            f"Period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+        )
         console.print(f"Frameworks: {', '.join(frameworks)}")
 
         console.print("\n[bold]Summary[/bold]")
@@ -418,14 +425,16 @@ def compliance_report(ctx, start_date, end_date, frameworks):
         console.print(f"Failed Operations: {report['summary']['failed_operations']}")
         console.print(f"Critical Failures: {report['summary']['critical_failures']}")
 
-        if report['findings']:
+        if report["findings"]:
             console.print(f"\n[bold]Findings ({len(report['findings'])})[/bold]")
-            for finding in report['findings'][:10]:  # Show first 10
-                console.print(f"• [{finding['severity']}] {finding['framework']}: {finding['finding']}")
+            for finding in report["findings"][:10]:  # Show first 10
+                console.print(
+                    f"• [{finding['severity']}] {finding['framework']}: {finding['finding']}"
+                )
 
-        if report['recommendations']:
+        if report["recommendations"]:
             console.print("\n[bold]Recommendations[/bold]")
-            for rec in report['recommendations']:
+            for rec in report["recommendations"]:
                 console.print(f"• {rec}")
 
     except Exception as e:
@@ -433,8 +442,8 @@ def compliance_report(ctx, start_date, end_date, frameworks):
 
 
 @cli.command()
-@click.option('--port', default=8000, help='Port to run the API server on')
-@click.option('--host', default='127.0.0.1', help='Host to bind the API server to')
+@click.option("--port", default=8000, help="Port to run the API server on")
+@click.option("--host", default="127.0.0.1", help="Host to bind the API server to")
 @click.pass_context
 def serve(ctx, port, host):
     """Start the JML Engine API server."""
@@ -466,11 +475,20 @@ def display_workflow_results(result):
     table.add_row("Workflow ID", result.workflow_id)
     table.add_row("Employee ID", result.employee_id)
     table.add_row("Event Type", result.event_type)
-    table.add_row("Started", result.started_at.strftime("%Y-%m-%d %H:%M:%S") if result.started_at else "N/A")
-    table.add_row("Completed", result.completed_at.strftime("%Y-%m-%d %H:%M:%S") if result.completed_at else "N/A")
+    table.add_row(
+        "Started", result.started_at.strftime("%Y-%m-%d %H:%M:%S") if result.started_at else "N/A"
+    )
+    table.add_row(
+        "Completed",
+        result.completed_at.strftime("%Y-%m-%d %H:%M:%S") if result.completed_at else "N/A",
+    )
     table.add_row("Total Steps", str(len(result.actions_taken)))
-    table.add_row("Successful", str(sum(1 for a in result.actions_taken if a.get('success', False))))
-    table.add_row("Failed", str(sum(1 for a in result.actions_taken if not a.get('success', False))))
+    table.add_row(
+        "Successful", str(sum(1 for a in result.actions_taken if a.get("success", False)))
+    )
+    table.add_row(
+        "Failed", str(sum(1 for a in result.actions_taken if not a.get("success", False)))
+    )
 
     console.print(table)
 

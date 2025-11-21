@@ -16,6 +16,7 @@ try:
     from azure.core.exceptions import HttpResponseError
     from azure.identity import DefaultAzureCredential
     from azure.mgmt.authorization import AuthorizationManagementClient
+
     AZURE_SDK_AVAILABLE = True
 except ImportError:
     AZURE_SDK_AVAILABLE = False
@@ -40,20 +41,21 @@ class AzureConnector(BaseConnector):
         if not mock_mode and AZURE_SDK_AVAILABLE:
             # Initialize Azure clients
             self.credential = DefaultAzureCredential()
-            self.subscription_id = config.get('subscription_id')
-            self.tenant_id = config.get('tenant_id')
+            self.subscription_id = config.get("subscription_id")
+            self.tenant_id = config.get("tenant_id")
 
             if not self.subscription_id:
                 raise ValueError("Azure subscription_id is required")
 
             self.auth_client = AuthorizationManagementClient(
-                credential=self.credential,
-                subscription_id=self.subscription_id
+                credential=self.credential, subscription_id=self.subscription_id
             )
         else:
             self.credential = None
-            self.subscription_id = config.get('subscription_id', 'mock-sub') if config else 'mock-sub'
-            self.tenant_id = config.get('tenant_id', 'mock-tenant') if config else 'mock-tenant'
+            self.subscription_id = (
+                config.get("subscription_id", "mock-sub") if config else "mock-sub"
+            )
+            self.tenant_id = config.get("tenant_id", "mock-tenant") if config else "mock-tenant"
             self.auth_client = None
 
     def create_user(self, user: UserIdentity) -> ConnectorResult:
@@ -66,7 +68,9 @@ class AzureConnector(BaseConnector):
         # other means and we just manage their group memberships and roles
 
         logger.warning("Azure user creation requires Microsoft Graph API - not implemented")
-        return ConnectorResult(False, "Azure user creation not implemented - use Microsoft Graph API")
+        return ConnectorResult(
+            False, "Azure user creation not implemented - use Microsoft Graph API"
+        )
 
     def delete_user(self, user_id: str) -> ConnectorResult:
         """Disable/deactivate user in Azure."""
@@ -75,7 +79,9 @@ class AzureConnector(BaseConnector):
 
         # Similar to create_user, this requires Microsoft Graph API
         logger.warning("Azure user deactivation requires Microsoft Graph API - not implemented")
-        return ConnectorResult(False, "Azure user deactivation not implemented - use Microsoft Graph API")
+        return ConnectorResult(
+            False, "Azure user deactivation not implemented - use Microsoft Graph API"
+        )
 
     def add_to_group(self, user_id: str, group_name: str) -> ConnectorResult:
         """Add user to Azure security group."""
@@ -84,7 +90,9 @@ class AzureConnector(BaseConnector):
 
         # This would require Microsoft Graph API for group membership management
         logger.warning("Azure group membership requires Microsoft Graph API - not implemented")
-        return ConnectorResult(False, "Azure group membership not implemented - use Microsoft Graph API")
+        return ConnectorResult(
+            False, "Azure group membership not implemented - use Microsoft Graph API"
+        )
 
     def remove_from_group(self, user_id: str, group_name: str) -> ConnectorResult:
         """Remove user from Azure security group."""
@@ -92,7 +100,9 @@ class AzureConnector(BaseConnector):
             return AzureMockConnector(self.config).remove_from_group(user_id, group_name)
 
         logger.warning("Azure group membership requires Microsoft Graph API - not implemented")
-        return ConnectorResult(False, "Azure group membership not implemented - use Microsoft Graph API")
+        return ConnectorResult(
+            False, "Azure group membership not implemented - use Microsoft Graph API"
+        )
 
     def grant_role(self, user_id: str, role_name: str) -> ConnectorResult:
         """Grant Azure role assignment."""
@@ -105,7 +115,9 @@ class AzureConnector(BaseConnector):
             # 1. Get the role definition
             # 2. Create role assignment
 
-            logger.warning("Azure role assignment requires complex role definition lookup - simplified implementation")
+            logger.warning(
+                "Azure role assignment requires complex role definition lookup - simplified implementation"
+            )
             return ConnectorResult(False, "Azure role assignment not fully implemented")
 
         except HttpResponseError as e:
@@ -135,7 +147,9 @@ class AzureConnector(BaseConnector):
             return AzureMockConnector(self.config).list_user_permissions(user_id)
 
         # Requires Microsoft Graph API and Azure Resource Manager
-        return ConnectorResult(False, "Azure permissions listing requires Microsoft Graph API and ARM")
+        return ConnectorResult(
+            False, "Azure permissions listing requires Microsoft Graph API and ARM"
+        )
 
 
 class AzureMockConnector(MockConnector):
@@ -146,4 +160,4 @@ class AzureMockConnector(MockConnector):
 
         # Azure-specific mock state
         self.groups: Dict[str, List[str]] = {}  # group_name -> list of user_ids
-        self.roles: Dict[str, List[str]] = {}   # role_name -> list of user_ids
+        self.roles: Dict[str, List[str]] = {}  # role_name -> list of user_ids

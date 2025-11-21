@@ -83,9 +83,7 @@ class WorkdayParser(HRFormatParser):
         try:
             # Extract core employee information
             employee_id = (
-                data.get("Employee_ID") or
-                data.get("Worker_ID") or
-                str(data.get("id", ""))
+                data.get("Employee_ID") or data.get("Worker_ID") or str(data.get("id", ""))
             )
 
             if not employee_id:
@@ -102,11 +100,7 @@ class WorkdayParser(HRFormatParser):
             position_data = employment_data.get("Position", {})
 
             # Determine event type
-            event_type_raw = (
-                data.get("Event_Type") or
-                data.get("Business_Process_Type") or
-                "Hire"
-            )
+            event_type_raw = data.get("Event_Type") or data.get("Business_Process_Type") or "Hire"
             event_type = self._normalize_event_type(event_type_raw)
 
             # Extract additional fields
@@ -142,7 +136,7 @@ class WorkdayParser(HRFormatParser):
                 location=location,
                 contract_type=contract_type,
                 source_system="Workday",
-                raw_data=data
+                raw_data=data,
             )
 
         except Exception as e:

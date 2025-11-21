@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class LifecycleEvent(str, Enum):
     """HR lifecycle events that trigger IAM workflows."""
+
     NEW_STARTER = "NEW_STARTER"
     ROLE_CHANGE = "ROLE_CHANGE"
     DEPARTMENT_CHANGE = "DEPARTMENT_CHANGE"
@@ -25,6 +26,7 @@ class LifecycleEvent(str, Enum):
 
 class UserStatus(str, Enum):
     """Current status of a user identity."""
+
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
     SUSPENDED = "SUSPENDED"
@@ -34,6 +36,7 @@ class UserStatus(str, Enum):
 
 class HREvent(BaseModel):
     """Normalized HR event from various sources (Workday, BambooHR, CSV, etc.)."""
+
     event: LifecycleEvent
     employee_id: str = Field(..., description="Unique employee identifier")
     name: str = Field(..., description="Full name of the employee")
@@ -45,37 +48,42 @@ class HREvent(BaseModel):
     end_date: Optional[datetime] = Field(None, description="Employment end date")
     location: Optional[str] = Field(None, description="Office location")
     contract_type: Optional[str] = Field("PERMANENT", description="PERMANENT/CONTRACTOR/etc.")
-    previous_department: Optional[str] = Field(None, description="Previous department for mover events")
+    previous_department: Optional[str] = Field(
+        None, description="Previous department for mover events"
+    )
     previous_title: Optional[str] = Field(None, description="Previous title for mover events")
     event_timestamp: datetime = Field(default_factory=datetime.utcnow)
     source_system: str = Field(..., description="Source of the event (Workday, BambooHR, etc.)")
     raw_data: Optional[Dict[str, Any]] = Field(None, description="Original raw event data")
 
-    @field_validator('email')
+    @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
         """Basic email validation for production, relaxed for testing."""
         # Allow basic validation - just check for @ symbol
         # In production, you might want more sophisticated validation
-        if isinstance(v, str) and '@' not in v and v != 'invalid-email':  # Allow test invalid email
-            raise ValueError('Invalid email format')
+        if isinstance(v, str) and "@" not in v and v != "invalid-email":  # Allow test invalid email
+            raise ValueError("Invalid email format")
         return v
 
-    @field_validator('manager_email')
+    @field_validator("manager_email")
     @classmethod
     def validate_manager_email(cls, v: Optional[str]) -> Optional[str]:
         """Basic email validation for manager email."""
-        if v is not None and '@' not in v:
-            raise ValueError('Invalid manager email format')
+        if v is not None and "@" not in v:
+            raise ValueError("Invalid manager email format")
         return v
 
 
 class AccessEntitlement(BaseModel):
     """Represents an access entitlement for a specific system."""
+
     system: str = Field(..., description="Target system (aws, azure, github, etc.)")
     resource_type: str = Field(..., description="Type of resource (role, group, team, etc.)")
     resource_name: str = Field(..., description="Name of the specific resource")
-    permission_level: Optional[str] = Field(None, description="Permission level (read, write, admin, etc.)")
+    permission_level: Optional[str] = Field(
+        None, description="Permission level (read, write, admin, etc.)"
+    )
     granted_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: Optional[datetime] = Field(None, description="Expiration date if applicable")
 
@@ -87,12 +95,17 @@ class AccessEntitlement(BaseModel):
         """Equality comparison for set operations."""
         if not isinstance(other, AccessEntitlement):
             return False
-        return (self.system, self.resource_type, self.resource_name, self.permission_level) == \
-               (other.system, other.resource_type, other.resource_name, other.permission_level)
+        return (self.system, self.resource_type, self.resource_name, self.permission_level) == (
+            other.system,
+            other.resource_type,
+            other.resource_name,
+            other.permission_level,
+        )
 
 
 class UserIdentity(BaseModel):
     """Complete user identity with all access entitlements."""
+
     employee_id: str
     name: str
     email: str
@@ -104,17 +117,18 @@ class UserIdentity(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     last_hr_event: Optional[HREvent] = None
 
-    @field_validator('email')
+    @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
         """Basic email validation."""
-        if '@' not in v:
-            raise ValueError('Invalid email format')
+        if "@" not in v:
+            raise ValueError("Invalid email format")
         return v
 
 
 class AuditRecord(BaseModel):
     """Audit record for compliance and reporting."""
+
     id: str = Field(..., description="Unique audit record ID")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     event_type: str = Field(..., description="Type of event (provision, revoke, update, etc.)")
@@ -129,17 +143,18 @@ class AuditRecord(BaseModel):
     workflow_id: Optional[str] = Field(None, description="ID of the workflow that triggered this")
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator('user_email')
+    @field_validator("user_email")
     @classmethod
     def validate_user_email(cls, v: str) -> str:
         """Basic email validation."""
-        if '@' not in v:
-            raise ValueError('Invalid email format')
+        if "@" not in v:
+            raise ValueError("Invalid email format")
         return v
 
 
 class WorkflowResult(BaseModel):
     """Result of a complete workflow execution."""
+
     workflow_id: str
     employee_id: str
     event_type: LifecycleEvent
@@ -153,6 +168,7 @@ class WorkflowResult(BaseModel):
 
 class AccessProfile(BaseModel):
     """Access profile defining entitlements for a department/title combination."""
+
     department: str
     title: Optional[str] = None
     aws_roles: List[str] = Field(default_factory=list)
@@ -165,6 +181,7 @@ class AccessProfile(BaseModel):
 
 class SystemCredentials(BaseModel):
     """Credentials for connecting to various systems."""
+
     system: str
     credentials: Dict[str, Any]  # Contains API keys, tokens, etc.
     mock_mode: bool = Field(False, description="Whether to use mock/simulated backend")

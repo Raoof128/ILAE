@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # Pydantic models for API requests/responses
 class HREventRequest(BaseModel):
     """HR Event submission request."""
+
     event: str = Field(..., description="Event type (NEW_STARTER, ROLE_CHANGE, TERMINATION, etc.)")
     employee_id: str = Field(..., description="Unique employee identifier")
     name: str = Field(..., description="Full name")
@@ -51,6 +52,7 @@ class HREventRequest(BaseModel):
 
 class WorkflowResponse(BaseModel):
     """Workflow execution response."""
+
     workflow_id: str
     employee_id: str
     event_type: str
@@ -66,6 +68,7 @@ class WorkflowResponse(BaseModel):
 
 class UserResponse(BaseModel):
     """User identity response."""
+
     employee_id: str
     name: str
     email: str
@@ -79,6 +82,7 @@ class UserResponse(BaseModel):
 
 class AuditResponse(BaseModel):
     """Audit record response."""
+
     id: str
     timestamp: str
     employee_id: str
@@ -94,6 +98,7 @@ class AuditResponse(BaseModel):
 
 class SimulationRequest(BaseModel):
     """Workflow simulation request."""
+
     event_type: str = Field(..., description="Type of event to simulate")
     mock_mode: bool = Field(True, description="Use mock connectors")
     disabled_systems: Optional[List[str]] = Field(None, description="Systems to skip")
@@ -134,7 +139,7 @@ app = FastAPI(
     title="JML Engine API",
     description="IAM Lifecycle Automation Engine - REST API for Joiner-Mover-Leaver workflows",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -164,8 +169,8 @@ async def health_check():
             "policy_mapper": policy_mapper is not None,
             "state_manager": state_manager is not None,
             "audit_logger": audit_logger is not None,
-            "evidence_store": evidence_store is not None
-        }
+            "evidence_store": evidence_store is not None,
+        },
     }
 
 
@@ -187,19 +192,25 @@ async def process_hr_event(event_request: HREventRequest, background_tasks: Back
             department=event_request.department,
             title=event_request.title,
             manager_email=event_request.manager_email,
-            start_date=datetime.fromisoformat(event_request.start_date) if event_request.start_date else None,
-            end_date=datetime.fromisoformat(event_request.end_date) if event_request.end_date else None,
+            start_date=datetime.fromisoformat(event_request.start_date)
+            if event_request.start_date
+            else None,
+            end_date=datetime.fromisoformat(event_request.end_date)
+            if event_request.end_date
+            else None,
             location=event_request.location,
             contract_type=event_request.contract_type or "PERMANENT",
             previous_department=event_request.previous_department,
             previous_title=event_request.previous_title,
-            source_system=event_request.source_system or "API"
+            source_system=event_request.source_system or "API",
         )
 
         # Validate the event
         validation_errors = validate_hr_event(hr_event)
         if validation_errors:
-            raise HTTPException(status_code=400, detail=f"Invalid HR event: {', '.join(validation_errors)}")
+            raise HTTPException(
+                status_code=400, detail=f"Invalid HR event: {', '.join(validation_errors)}"
+            )
 
         # Determine workflow type
         workflow_type = determine_workflow_type(hr_event)
@@ -218,7 +229,7 @@ async def process_hr_event(event_request: HREventRequest, background_tasks: Back
             total_steps=0,
             successful_steps=0,
             failed_steps=0,
-            errors=[]
+            errors=[],
         )
 
     except Exception as e:
@@ -245,7 +256,7 @@ async def get_user(employee_id: str):
         status=identity.status.value,
         entitlements_count=len(identity.entitlements),
         created_at=identity.created_at.isoformat(),
-        updated_at=identity.updated_at.isoformat()
+        updated_at=identity.updated_at.isoformat(),
     )
 
 
@@ -253,7 +264,7 @@ async def get_user(employee_id: str):
 async def list_users(
     department: Optional[str] = Query(None, description="Filter by department"),
     status: Optional[str] = Query(None, description="Filter by status"),
-    limit: int = Query(100, description="Maximum number of results")
+    limit: int = Query(100, description="Maximum number of results"),
 ):
     """List user identities with optional filtering."""
     if not state_manager:
@@ -279,7 +290,7 @@ async def list_users(
             status=i.status.value,
             entitlements_count=len(i.entitlements),
             created_at=i.created_at.isoformat(),
-            updated_at=i.updated_at.isoformat()
+            updated_at=i.updated_at.isoformat(),
         )
         for i in identities[:limit]
     ]
@@ -293,7 +304,7 @@ async def get_audit_logs(
     system: Optional[str] = Query(None, description="Filter by system"),
     event_type: Optional[str] = Query(None, description="Filter by event type"),
     days_back: int = Query(30, description="Number of days to look back"),
-    limit: int = Query(100, description="Maximum number of results")
+    limit: int = Query(100, description="Maximum number of results"),
 ):
     """Get audit logs with optional filtering."""
     if not audit_logger:
@@ -310,9 +321,7 @@ async def get_audit_logs(
 
 @app.post("/simulate/{workflow_type}", response_model=WorkflowResponse)
 async def simulate_workflow(
-    workflow_type: str,
-    request: SimulationRequest,
-    background_tasks: BackgroundTasks
+    workflow_type: str, request: SimulationRequest, background_tasks: BackgroundTasks
 ):
     """
     Simulate a workflow execution for testing purposes.
@@ -320,17 +329,16 @@ async def simulate_workflow(
     This endpoint allows testing workflows without affecting real systems.
     """
     if workflow_type not in ["joiner", "mover", "leaver"]:
-        raise HTTPException(status_code=400, detail="Invalid workflow type. Must be: joiner, mover, leaver")
+        raise HTTPException(
+            status_code=400, detail="Invalid workflow type. Must be: joiner, mover, leaver"
+        )
 
     try:
         # Create a sample HR event based on workflow type
         hr_event = create_sample_hr_event(request.event_type)
 
         # Execute workflow in background with mock mode
-        config = {
-            "mock_mode": True,
-            "disabled_systems": request.disabled_systems or []
-        }
+        config = {"mock_mode": True, "disabled_systems": request.disabled_systems or []}
 
         background_tasks.add_task(execute_workflow_async, hr_event, workflow_type, config)
 
@@ -345,7 +353,7 @@ async def simulate_workflow(
             total_steps=0,
             successful_steps=0,
             failed_steps=0,
-            errors=[]
+            errors=[],
         )
 
     except Exception as e:
@@ -367,7 +375,7 @@ async def get_system_stats():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "identities": identity_stats,
             "evidence": evidence_stats,
-            "supported_formats": hr_listener.get_supported_formats() if hr_listener else []
+            "supported_formats": hr_listener.get_supported_formats() if hr_listener else [],
         }
 
     except Exception as e:
@@ -375,7 +383,9 @@ async def get_system_stats():
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-async def execute_workflow_async(hr_event: HREvent, workflow_type: str, config: Optional[Dict[str, Any]] = None):
+async def execute_workflow_async(
+    hr_event: HREvent, workflow_type: str, config: Optional[Dict[str, Any]] = None
+):
     """Execute workflow asynchronously."""
     try:
         config = config or {"mock_mode": True}
@@ -392,8 +402,10 @@ async def execute_workflow_async(hr_event: HREvent, workflow_type: str, config: 
 
         result = workflow.execute(hr_event)
 
-        logger.info(f"Workflow {workflow_type} completed for {hr_event.employee_id}: "
-                   f"success={result.success}, steps={len(result.actions_taken)}")
+        logger.info(
+            f"Workflow {workflow_type} completed for {hr_event.employee_id}: "
+            f"success={result.success}, steps={len(result.actions_taken)}"
+        )
 
     except Exception as e:
         logger.error(f"Error executing workflow {workflow_type} for {hr_event.employee_id}: {e}")
@@ -407,7 +419,7 @@ def create_sample_hr_event(event_type: str) -> HREvent:
         "email": f"sample.{datetime.now(timezone.utc).strftime('%H%M%S')}@company.com",
         "department": "Engineering",
         "title": "Software Engineer",
-        "source_system": "API_SIMULATION"
+        "source_system": "API_SIMULATION",
     }
 
     if event_type == "NEW_STARTER":
@@ -417,7 +429,7 @@ def create_sample_hr_event(event_type: str) -> HREvent:
             event="ROLE_CHANGE",
             previous_department="Engineering",
             previous_title="Junior Engineer",
-            **base_event
+            **base_event,
         )
     elif event_type == "TERMINATION":
         return HREvent(event="TERMINATION", **base_event)
@@ -427,13 +439,7 @@ def create_sample_hr_event(event_type: str) -> HREvent:
 
 def start_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
     """Start the FastAPI server."""
-    uvicorn.run(
-        "jml_engine.api.server:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level="info"
-    )
+    uvicorn.run("jml_engine.api.server:app", host=host, port=port, reload=reload, log_level="info")
 
 
 if __name__ == "__main__":

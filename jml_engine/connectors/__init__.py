@@ -16,26 +16,32 @@ def _get_connector_class(system: str, mock: bool = False):
 
     # Try to import real connector, fallback to mock
     try:
-        if system == 'aws':
+        if system == "aws":
             from .aws_connector import AWSConnector
+
             return AWSConnector
-        elif system == 'azure':
+        elif system == "azure":
             from .azure_connector import AzureConnector
+
             return AzureConnector
-        elif system == 'github':
+        elif system == "github":
             from .github_connector import GitHubConnector
+
             return GitHubConnector
-        elif system == 'google':
+        elif system == "google":
             from .google_connector import GoogleConnector
+
             return GoogleConnector
-        elif system == 'slack':
+        elif system == "slack":
             from .slack_connector import SlackConnector
+
             return SlackConnector
     except ImportError:
         pass
 
     # Fallback to mock connector
     return MockConnector
+
 
 # For backward compatibility - these will be None if SDKs not available
 AWSConnector = None

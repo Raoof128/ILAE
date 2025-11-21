@@ -150,7 +150,7 @@ class BambooHRParser(HRFormatParser):
                 previous_department=previous_department,
                 previous_title=previous_title,
                 source_system="BambooHR",
-                raw_data=data
+                raw_data=data,
             )
 
         except Exception as e:

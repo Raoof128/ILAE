@@ -33,8 +33,13 @@ class LeaverWorkflow(BaseWorkflow):
         Returns:
             WorkflowResult with execution details
         """
-        if hr_event.event not in [LifecycleEvent.TERMINATION, LifecycleEvent.CONTRACTOR_OFFBOARDING]:
-            raise ValueError(f"Leaver workflow can only process TERMINATION/CONTRACTOR_OFFBOARDING events, got {hr_event.event}")
+        if hr_event.event not in [
+            LifecycleEvent.TERMINATION,
+            LifecycleEvent.CONTRACTOR_OFFBOARDING,
+        ]:
+            raise ValueError(
+                f"Leaver workflow can only process TERMINATION/CONTRACTOR_OFFBOARDING events, got {hr_event.event}"
+            )
 
         self.started_at = datetime.now(timezone.utc)
         logger.info(f"Starting leaver workflow for employee {hr_event.employee_id}")
@@ -65,10 +70,12 @@ class LeaverWorkflow(BaseWorkflow):
                 completed_at=self.completed_at,
                 success=len(self.errors) == 0,
                 actions_taken=[step.to_dict() for step in self.steps],
-                errors=self.errors.copy()
+                errors=self.errors.copy(),
             )
 
-            logger.info(f"Completed leaver workflow for {hr_event.employee_id}: {len(self.steps)} steps, {len(self.errors)} errors")
+            logger.info(
+                f"Completed leaver workflow for {hr_event.employee_id}: {len(self.steps)} steps, {len(self.errors)} errors"
+            )
             return result
 
         except Exception as e:
@@ -84,7 +91,7 @@ class LeaverWorkflow(BaseWorkflow):
                 completed_at=self.completed_at,
                 success=False,
                 actions_taken=[step.to_dict() for step in self.steps],
-                errors=self.errors.copy()
+                errors=self.errors.copy(),
             )
 
     def _execute_deprovisioning_steps(self, hr_event: HREvent, identity: Optional[Any]):
@@ -118,9 +125,9 @@ class LeaverWorkflow(BaseWorkflow):
                 operation=operation,
                 resource=entitlement.resource_name,
                 parameters={
-                    'user_id': hr_event.employee_id,
-                    'resource_name': entitlement.resource_name
-                }
+                    "user_id": hr_event.employee_id,
+                    "resource_name": entitlement.resource_name,
+                },
             )
 
             self.steps.append(step)
@@ -134,21 +141,19 @@ class LeaverWorkflow(BaseWorkflow):
                 action=operation,
                 resource=entitlement.resource_name,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
     def _deactivate_user_accounts(self, hr_event: HREvent):
         """Deactivate user accounts in all target systems."""
-        systems_to_deactivate = ['aws', 'azure', 'github', 'google', 'slack']
+        systems_to_deactivate = ["aws", "azure", "github", "google", "slack"]
 
         for system in systems_to_deactivate:
             step = WorkflowStep(
                 system=system,
-                operation='delete_user',
-                resource='user_account',
-                parameters={
-                    'user_id': hr_event.employee_id
-                }
+                operation="delete_user",
+                resource="user_account",
+                parameters={"user_id": hr_event.employee_id},
             )
 
             self.steps.append(step)
@@ -162,7 +167,7 @@ class LeaverWorkflow(BaseWorkflow):
                 action="delete_user",
                 resource="user_account",
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
     def _get_revocation_operation(self, resource_type: str) -> str:
@@ -176,9 +181,9 @@ class LeaverWorkflow(BaseWorkflow):
             Operation name for revocation
         """
         operation_map = {
-            'role': 'revoke_role',
-            'group': 'remove_from_group',
-            'team': 'remove_from_group',  # Teams are treated as groups
-            'channel': 'remove_from_group'  # Channels are treated as groups
+            "role": "revoke_role",
+            "group": "remove_from_group",
+            "team": "remove_from_group",  # Teams are treated as groups
+            "channel": "remove_from_group",  # Channels are treated as groups
         }
-        return operation_map.get(resource_type, 'revoke_role')
+        return operation_map.get(resource_type, "revoke_role")

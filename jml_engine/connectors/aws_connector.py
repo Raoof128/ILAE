@@ -15,6 +15,7 @@ from .base_connector import BaseConnector, ConnectorResult, MockConnector
 try:
     import boto3  # noqa: F401
     from botocore.exceptions import ClientError  # noqa: F401
+
     AWS_SDK_AVAILABLE = True
 except ImportError:
     AWS_SDK_AVAILABLE = False
@@ -38,16 +39,16 @@ class AWSConnector(BaseConnector):
         if not mock_mode and AWS_SDK_AVAILABLE:
             # Initialize AWS clients
             self.iam_client = boto3.client(
-                'iam',
-                aws_access_key_id=config.get('aws_access_key_id'),
-                aws_secret_access_key=config.get('aws_secret_access_key'),
-                region_name=config.get('region', 'us-east-1')
+                "iam",
+                aws_access_key_id=config.get("aws_access_key_id"),
+                aws_secret_access_key=config.get("aws_secret_access_key"),
+                region_name=config.get("region", "us-east-1"),
             )
             self.sts_client = boto3.client(
-                'sts',
-                aws_access_key_id=config.get('aws_access_key_id'),
-                aws_secret_access_key=config.get('aws_secret_access_key'),
-                region_name=config.get('region', 'us-east-1')
+                "sts",
+                aws_access_key_id=config.get("aws_access_key_id"),
+                aws_secret_access_key=config.get("aws_secret_access_key"),
+                region_name=config.get("region", "us-east-1"),
             )
         else:
             self.iam_client = None
@@ -65,16 +66,18 @@ class AWSConnector(BaseConnector):
             response = self.iam_client.create_user(
                 UserName=username,
                 Tags=[
-                    {'Key': 'EmployeeID', 'Value': user.employee_id},
-                    {'Key': 'Email', 'Value': user.email},
-                    {'Key': 'Department', 'Value': user.department},
-                    {'Key': 'ManagedBy', 'Value': 'JML-Engine'}
-                ]
+                    {"Key": "EmployeeID", "Value": user.employee_id},
+                    {"Key": "Email", "Value": user.email},
+                    {"Key": "Department", "Value": user.department},
+                    {"Key": "ManagedBy", "Value": "JML-Engine"},
+                ],
             )
 
-            user_id = response['User']['UserId']
+            user_id = response["User"]["UserId"]
             logger.info(f"Created AWS IAM user: {username} (ID: {user_id})")
-            return ConnectorResult(True, f"Created IAM user {username}", {"user_id": user_id, "username": username})
+            return ConnectorResult(
+                True, f"Created IAM user {username}", {"user_id": user_id, "username": username}
+            )
 
         except ClientError as e:
             error_msg = f"Failed to create IAM user: {e}"
@@ -89,35 +92,25 @@ class AWSConnector(BaseConnector):
         try:
             # First, list and remove all access keys
             access_keys = self.iam_client.list_access_keys(UserName=user_id)
-            for key in access_keys.get('AccessKeyMetadata', []):
-                self.iam_client.delete_access_key(
-                    UserName=user_id,
-                    AccessKeyId=key['AccessKeyId']
-                )
+            for key in access_keys.get("AccessKeyMetadata", []):
+                self.iam_client.delete_access_key(UserName=user_id, AccessKeyId=key["AccessKeyId"])
 
             # Remove user from all groups
             groups = self.iam_client.list_groups_for_user(UserName=user_id)
-            for group in groups.get('Groups', []):
+            for group in groups.get("Groups", []):
                 self.iam_client.remove_user_from_group(
-                    UserName=user_id,
-                    GroupName=group['GroupName']
+                    UserName=user_id, GroupName=group["GroupName"]
                 )
 
             # Detach all managed policies
             policies = self.iam_client.list_attached_user_policies(UserName=user_id)
-            for policy in policies.get('AttachedPolicies', []):
-                self.iam_client.detach_user_policy(
-                    UserName=user_id,
-                    PolicyArn=policy['PolicyArn']
-                )
+            for policy in policies.get("AttachedPolicies", []):
+                self.iam_client.detach_user_policy(UserName=user_id, PolicyArn=policy["PolicyArn"])
 
             # Delete inline policies
             inline_policies = self.iam_client.list_user_policies(UserName=user_id)
-            for policy_name in inline_policies.get('PolicyNames', []):
-                self.iam_client.delete_user_policy(
-                    UserName=user_id,
-                    PolicyName=policy_name
-                )
+            for policy_name in inline_policies.get("PolicyNames", []):
+                self.iam_client.delete_user_policy(UserName=user_id, PolicyName=policy_name)
 
             # Finally, delete the user
             self.iam_client.delete_user(UserName=user_id)
@@ -145,10 +138,7 @@ class AWSConnector(BaseConnector):
                 logger.info(f"Created IAM group: {group_name}")
 
             # Add user to group
-            self.iam_client.add_user_to_group(
-                UserName=user_id,
-                GroupName=group_name
-            )
+            self.iam_client.add_user_to_group(UserName=user_id, GroupName=group_name)
 
             logger.info(f"Added {user_id} to IAM group {group_name}")
             return ConnectorResult(True, f"Added {user_id} to group {group_name}")
@@ -164,10 +154,7 @@ class AWSConnector(BaseConnector):
             return AWSMockConnector(self.config).remove_from_group(user_id, group_name)
 
         try:
-            self.iam_client.remove_user_from_group(
-                UserName=user_id,
-                GroupName=group_name
-            )
+            self.iam_client.remove_user_from_group(UserName=user_id, GroupName=group_name)
 
             logger.info(f"Removed {user_id} from IAM group {group_name}")
             return ConnectorResult(True, f"Removed {user_id} from group {group_name}")
@@ -186,10 +173,7 @@ class AWSConnector(BaseConnector):
             # Convert role name to policy ARN if it's a standard AWS policy
             policy_arn = self._get_policy_arn(role_name)
 
-            self.iam_client.attach_user_policy(
-                UserName=user_id,
-                PolicyArn=policy_arn
-            )
+            self.iam_client.attach_user_policy(UserName=user_id, PolicyArn=policy_arn)
 
             logger.info(f"Attached policy {policy_arn} to user {user_id}")
             return ConnectorResult(True, f"Granted role {role_name} to {user_id}")
@@ -207,10 +191,7 @@ class AWSConnector(BaseConnector):
         try:
             policy_arn = self._get_policy_arn(role_name)
 
-            self.iam_client.detach_user_policy(
-                UserName=user_id,
-                PolicyArn=policy_arn
-            )
+            self.iam_client.detach_user_policy(UserName=user_id, PolicyArn=policy_arn)
 
             logger.info(f"Detached policy {policy_arn} from user {user_id}")
             return ConnectorResult(True, f"Revoked role {role_name} from {user_id}")
@@ -227,12 +208,12 @@ class AWSConnector(BaseConnector):
 
         try:
             response = self.iam_client.get_user(UserName=user_id)
-            user_data = response['User']
+            user_data = response["User"]
             logger.debug(f"Retrieved IAM user: {user_id}")
             return ConnectorResult(True, f"Found user {user_id}", user_data)
 
         except ClientError as e:
-            if e.response['Error']['Code'] == 'NoSuchEntity':
+            if e.response["Error"]["Code"] == "NoSuchEntity":
                 return ConnectorResult(False, f"User {user_id} not found")
             error_msg = f"Failed to get user {user_id}: {e}"
             logger.error(error_msg)
@@ -244,23 +225,21 @@ class AWSConnector(BaseConnector):
             return AWSMockConnector(self.config).list_user_permissions(user_id)
 
         try:
-            permissions = {
-                "groups": [],
-                "policies": [],
-                "inline_policies": []
-            }
+            permissions = {"groups": [], "policies": [], "inline_policies": []}
 
             # Get groups
             groups_response = self.iam_client.list_groups_for_user(UserName=user_id)
-            permissions["groups"] = [g['GroupName'] for g in groups_response.get('Groups', [])]
+            permissions["groups"] = [g["GroupName"] for g in groups_response.get("Groups", [])]
 
             # Get attached managed policies
             policies_response = self.iam_client.list_attached_user_policies(UserName=user_id)
-            permissions["policies"] = [p['PolicyName'] for p in policies_response.get('AttachedPolicies', [])]
+            permissions["policies"] = [
+                p["PolicyName"] for p in policies_response.get("AttachedPolicies", [])
+            ]
 
             # Get inline policies
             inline_response = self.iam_client.list_user_policies(UserName=user_id)
-            permissions["inline_policies"] = inline_response.get('PolicyNames', [])
+            permissions["inline_policies"] = inline_response.get("PolicyNames", [])
 
             return ConnectorResult(True, f"Permissions for {user_id}", permissions)
 
@@ -272,10 +251,10 @@ class AWSConnector(BaseConnector):
     def _generate_username(self, user: UserIdentity) -> str:
         """Generate AWS IAM username from user identity."""
         # Use email prefix or employee ID
-        base = user.email.split('@')[0] if '@' in user.email else user.employee_id
+        base = user.email.split("@")[0] if "@" in user.email else user.employee_id
 
         # Clean up username (IAM usernames have restrictions)
-        username = ''.join(c for c in base if c.isalnum() or c in ['_', '-', '.'])
+        username = "".join(c for c in base if c.isalnum() or c in ["_", "-", "."])
 
         # Ensure length constraints
         if len(username) > 64:

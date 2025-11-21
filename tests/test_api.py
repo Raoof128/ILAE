@@ -18,6 +18,7 @@ class TestHealthEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
@@ -44,31 +45,34 @@ class TestHealthEndpoints:
         # Check component structure
         components = data["components"]
         expected_components = [
-            "hr_listener", "policy_mapper", "state_manager",
-            "audit_logger", "evidence_store"
+            "hr_listener",
+            "policy_mapper",
+            "state_manager",
+            "audit_logger",
+            "evidence_store",
         ]
         for component in expected_components:
             assert component in components
 
     def test_stats_endpoint(self, client):
         """Test the system statistics endpoint."""
-        with patch('jml_engine.api.server.state_manager') as mock_sm, \
-             patch('jml_engine.api.server.audit_logger') as _, \
-             patch('jml_engine.api.server.evidence_store') as mock_es, \
-             patch('jml_engine.api.server.hr_listener') as mock_hl:
-
+        with patch("jml_engine.api.server.state_manager") as mock_sm, patch(
+            "jml_engine.api.server.audit_logger"
+        ) as _, patch("jml_engine.api.server.evidence_store") as mock_es, patch(
+            "jml_engine.api.server.hr_listener"
+        ) as mock_hl:
             # Setup mocks
             mock_sm.get_identities_summary.return_value = {
                 "total_users": 10,
                 "total_entitlements": 25,
                 "users_by_department": {"Engineering": 5, "HR": 3},
-                "users_by_status": {"ACTIVE": 8, "TERMINATED": 2}
+                "users_by_status": {"ACTIVE": 8, "TERMINATED": 2},
             }
 
             mock_es.get_evidence_stats.return_value = {
                 "total_files": 15,
                 "total_size_bytes": 1024000,
-                "files_by_system": {"aws": 8, "github": 7}
+                "files_by_system": {"aws": 8, "github": 7},
             }
 
             mock_hl.get_supported_formats.return_value = ["Workday", "BambooHR", "CSV"]
@@ -90,6 +94,7 @@ class TestHREventEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
@@ -106,7 +111,7 @@ class TestHREventEndpoints:
             "manager_email": "manager@company.com",
             "start_date": "2024-01-15",
             "contract_type": "PERMANENT",
-            "source_system": "API_TEST"
+            "source_system": "API_TEST",
         }
 
     def test_valid_hr_event_submission(self, client, valid_hr_event):
@@ -128,7 +133,7 @@ class TestHREventEndpoints:
             "employee_id": "",  # Empty employee ID
             "name": "",
             "email": "invalid-email",  # Invalid email format
-            "department": "Engineering"
+            "department": "Engineering",
         }
 
         response = client.post("/event/hr", json=invalid_event)
@@ -149,11 +154,7 @@ class TestHREventEndpoints:
         response = client.post("/event/hr", json=incomplete_event)
         assert response.status_code == 422
 
-    @pytest.mark.parametrize("event_type", [
-        "NEW_STARTER",
-        "ROLE_CHANGE",
-        "TERMINATION"
-    ])
+    @pytest.mark.parametrize("event_type", ["NEW_STARTER", "ROLE_CHANGE", "TERMINATION"])
     def test_different_event_types(self, client, valid_hr_event, event_type):
         """Test different HR event types."""
         test_event = valid_hr_event.copy()
@@ -177,12 +178,13 @@ class TestUserManagementEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
     def test_get_existing_user(self, client):
         """Test retrieving an existing user."""
-        with patch('jml_engine.api.server.state_manager') as mock_sm:
+        with patch("jml_engine.api.server.state_manager") as mock_sm:
             mock_identity = MagicMock()
             mock_identity.employee_id = "USER001"
             mock_identity.name = "Test User"
@@ -206,7 +208,7 @@ class TestUserManagementEndpoints:
 
     def test_get_nonexistent_user(self, client):
         """Test retrieving a non-existent user."""
-        with patch('jml_engine.api.server.state_manager') as mock_sm:
+        with patch("jml_engine.api.server.state_manager") as mock_sm:
             mock_sm.get_identity.return_value = None
 
             response = client.get("/user/NONEXISTENT")
@@ -217,7 +219,7 @@ class TestUserManagementEndpoints:
 
     def test_list_users_basic(self, client):
         """Test basic user listing."""
-        with patch('jml_engine.api.server.state_manager') as mock_sm:
+        with patch("jml_engine.api.server.state_manager") as mock_sm:
             mock_identity = MagicMock()
             mock_identity.employee_id = "USER001"
             mock_identity.name = "Test User"
@@ -241,7 +243,7 @@ class TestUserManagementEndpoints:
 
     def test_list_users_with_filters(self, client):
         """Test user listing with department and status filters."""
-        with patch('jml_engine.api.server.state_manager') as mock_sm:
+        with patch("jml_engine.api.server.state_manager") as mock_sm:
             # Create mock identities
             eng_user = MagicMock()
             eng_user.employee_id = "ENG001"
@@ -276,7 +278,7 @@ class TestUserManagementEndpoints:
 
     def test_list_users_pagination(self, client):
         """Test user listing with limit parameter."""
-        with patch('jml_engine.api.server.state_manager') as mock_sm:
+        with patch("jml_engine.api.server.state_manager") as mock_sm:
             # Create multiple mock identities
             identities = []
             for i in range(10):
@@ -308,6 +310,7 @@ class TestAuditEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
@@ -331,17 +334,14 @@ class TestSimulationEndpoints:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
     @pytest.fixture
     def simulation_request(self):
         """Valid simulation request data."""
-        return {
-            "event_type": "NEW_STARTER",
-            "mock_mode": True,
-            "disabled_systems": []
-        }
+        return {"event_type": "NEW_STARTER", "mock_mode": True, "disabled_systems": []}
 
     def test_joiner_simulation(self, client, simulation_request):
         """Test joiner workflow simulation."""
@@ -396,24 +396,21 @@ class TestErrorHandling:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
     def test_malformed_json(self, client):
         """Test handling of malformed JSON requests."""
         response = client.post(
-            "/event/hr",
-            data="invalid json content",
-            headers={"Content-Type": "application/json"}
+            "/event/hr", data="invalid json content", headers={"Content-Type": "application/json"}
         )
         assert response.status_code == 422
 
     def test_unsupported_content_type(self, client):
         """Test handling of unsupported content types."""
         response = client.post(
-            "/event/hr",
-            data="<xml>invalid</xml>",
-            headers={"Content-Type": "application/xml"}
+            "/event/hr", data="<xml>invalid</xml>", headers={"Content-Type": "application/xml"}
         )
         # Should return 422 for validation error or 400 for bad request
         assert response.status_code in [400, 422]

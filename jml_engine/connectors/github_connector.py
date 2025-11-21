@@ -17,6 +17,7 @@ try:
     from github.NamedUser import NamedUser
     from github.Organization import Organization
     from github.Team import Team
+
     GITHUB_SDK_AVAILABLE = True
 except ImportError:
     GITHUB_SDK_AVAILABLE = False
@@ -41,23 +42,25 @@ class GitHubConnector(BaseConnector):
         super().__init__(config, mock_mode)
 
         if not mock_mode and GITHUB_SDK_AVAILABLE:
-            token = config.get('github_token') or config.get('token')
+            token = config.get("github_token") or config.get("token")
             if not token:
                 raise ValueError("GitHub token is required for real mode")
 
             self.github = Github(token)
-            self.org_name = config.get('organization') or config.get('org')
+            self.org_name = config.get("organization") or config.get("org")
             if not self.org_name:
                 raise ValueError("GitHub organization name is required")
 
             try:
                 self.org = self.github.get_organization(self.org_name)
             except GithubException as e:
-                raise ValueError(f"Failed to access GitHub organization {self.org_name}: {e}") from e
+                raise ValueError(
+                    f"Failed to access GitHub organization {self.org_name}: {e}"
+                ) from e
         else:
             self.github = None
             self.org = None
-            self.org_name = config.get('organization', 'mock-org') if config else 'mock-org'
+            self.org_name = config.get("organization", "mock-org") if config else "mock-org"
 
     def create_user(self, user: UserIdentity) -> ConnectorResult:
         """Invite user to GitHub organization."""
@@ -67,13 +70,15 @@ class GitHubConnector(BaseConnector):
         try:
             # Send invitation to organization
             invitation = self.org.invite_user(
-                email=user.email,
-                role='member'  # Can be 'member' or 'admin'
+                email=user.email, role="member"  # Can be 'member' or 'admin'
             )
 
             logger.info(f"Sent GitHub invitation to {user.email} for org {self.org_name}")
-            return ConnectorResult(True, f"Invited {user.email} to GitHub organization",
-                                 {"invitation_id": invitation.id if hasattr(invitation, 'id') else None})
+            return ConnectorResult(
+                True,
+                f"Invited {user.email} to GitHub organization",
+                {"invitation_id": invitation.id if hasattr(invitation, "id") else None},
+            )
 
         except GithubException as e:
             error_msg = f"Failed to invite {user.email} to GitHub: {e}"
@@ -113,7 +118,7 @@ class GitHubConnector(BaseConnector):
             user = self.github.get_user(user_id)
 
             # Add user to team
-            team.add_membership(user, role='member')
+            team.add_membership(user, role="member")
 
             logger.info(f"Added {user_id} to GitHub team {group_name}")
             return ConnectorResult(True, f"Added {user_id} to team {group_name}")
@@ -173,7 +178,7 @@ class GitHubConnector(BaseConnector):
                 "email": user.email,
                 "company": user.company,
                 "location": user.location,
-                "bio": user.bio
+                "bio": user.bio,
             }
 
             return ConnectorResult(True, f"Found GitHub user {user_id}", user_data)
@@ -209,18 +214,22 @@ class GitHubConnector(BaseConnector):
             for team in self.org.get_teams():
                 try:
                     if team.has_in_members(user):
-                        teams.append({
-                            "name": team.name,
-                            "slug": team.slug,
-                            "role": "maintainer" if team.has_in_members(user, "maintainer") else "member"
-                        })
+                        teams.append(
+                            {
+                                "name": team.name,
+                                "slug": team.slug,
+                                "role": "maintainer"
+                                if team.has_in_members(user, "maintainer")
+                                else "member",
+                            }
+                        )
                 except GithubException:
                     continue
 
             permissions = {
                 "is_member": is_member,
                 "teams": teams,
-                "organization_role": membership.role if membership else None
+                "organization_role": membership.role if membership else None,
             }
 
             return ConnectorResult(True, f"Permissions for {user_id}", permissions)
@@ -237,8 +246,7 @@ class GitHubConnector(BaseConnector):
         except GithubException:
             # Create new team
             team = self.org.create_team(
-                name=team_name,
-                privacy='closed'  # Can be 'closed' or 'secret'
+                name=team_name, privacy="closed"  # Can be 'closed' or 'secret'
             )
             logger.info(f"Created GitHub team: {team_name}")
             return team

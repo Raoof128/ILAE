@@ -34,7 +34,9 @@ class MoverWorkflow(BaseWorkflow):
             WorkflowResult with execution details
         """
         if hr_event.event not in [LifecycleEvent.ROLE_CHANGE, LifecycleEvent.DEPARTMENT_CHANGE]:
-            raise ValueError(f"Mover workflow can only process ROLE_CHANGE/DEPARTMENT_CHANGE events, got {hr_event.event}")
+            raise ValueError(
+                f"Mover workflow can only process ROLE_CHANGE/DEPARTMENT_CHANGE events, got {hr_event.event}"
+            )
 
         self.started_at = datetime.now(timezone.utc)
         logger.info(f"Starting mover workflow for employee {hr_event.employee_id}")
@@ -63,7 +65,9 @@ class MoverWorkflow(BaseWorkflow):
             self._execute_addition_steps(hr_event, entitlements_to_add)
 
             # Update state with new entitlements
-            updated_entitlements = [ent for ent in current_identity.entitlements if ent not in entitlements_to_remove]
+            updated_entitlements = [
+                ent for ent in current_identity.entitlements if ent not in entitlements_to_remove
+            ]
             updated_entitlements.extend(entitlements_to_add)
             self.state_manager.update_entitlements(hr_event.employee_id, updated_entitlements)
 
@@ -85,10 +89,12 @@ class MoverWorkflow(BaseWorkflow):
                 completed_at=self.completed_at,
                 success=len(self.errors) == 0,
                 actions_taken=[step.to_dict() for step in self.steps],
-                errors=self.errors.copy()
+                errors=self.errors.copy(),
             )
 
-            logger.info(f"Completed mover workflow for {hr_event.employee_id}: {len(self.steps)} steps, {len(self.errors)} errors")
+            logger.info(
+                f"Completed mover workflow for {hr_event.employee_id}: {len(self.steps)} steps, {len(self.errors)} errors"
+            )
             return result
 
         except Exception as e:
@@ -104,7 +110,7 @@ class MoverWorkflow(BaseWorkflow):
                 completed_at=self.completed_at,
                 success=False,
                 actions_taken=[step.to_dict() for step in self.steps],
-                errors=self.errors.copy()
+                errors=self.errors.copy(),
             )
 
     def _get_old_access_profile(self, hr_event: HREvent) -> Any:
@@ -120,13 +126,15 @@ class MoverWorkflow(BaseWorkflow):
         old_department = hr_event.previous_department or hr_event.department
         old_title = hr_event.previous_title or hr_event.title
 
-        return self.policy_mapper.get_access_profile(
-            department=old_department,
-            title=old_title
-        )
+        return self.policy_mapper.get_access_profile(department=old_department, title=old_title)
 
-    def _calculate_entitlement_changes(self, current_entitlements: List[AccessEntitlement],
-                                    old_profile: Any, new_profile: Any, employee_id: str) -> tuple:
+    def _calculate_entitlement_changes(
+        self,
+        current_entitlements: List[AccessEntitlement],
+        old_profile: Any,
+        new_profile: Any,
+        employee_id: str,
+    ) -> tuple:
         """
         Calculate which entitlements to remove and add.
 
@@ -150,11 +158,15 @@ class MoverWorkflow(BaseWorkflow):
         # Entitlements to add: in new but not in current
         entitlements_to_add = new_entitlements - current_entitlements_set
 
-        logger.debug(f"Entitlement changes for {employee_id}: remove {len(entitlements_to_remove)}, add {len(entitlements_to_add)}")
+        logger.debug(
+            f"Entitlement changes for {employee_id}: remove {len(entitlements_to_remove)}, add {len(entitlements_to_add)}"
+        )
 
         return list(entitlements_to_remove), list(entitlements_to_add)
 
-    def _execute_removal_steps(self, hr_event: HREvent, entitlements_to_remove: List[AccessEntitlement]):
+    def _execute_removal_steps(
+        self, hr_event: HREvent, entitlements_to_remove: List[AccessEntitlement]
+    ):
         """
         Execute steps to remove old entitlements.
 
@@ -166,17 +178,17 @@ class MoverWorkflow(BaseWorkflow):
             operation = self._get_removal_operation(entitlement.resource_type)
 
             # Determine parameter key based on operation
-            param_key = 'role_name' if 'role' in operation else 'group_name'
+            param_key = "role_name" if "role" in operation else "group_name"
 
             step = WorkflowStep(
                 system=entitlement.system,
                 operation=operation,
                 resource=entitlement.resource_name,
                 parameters={
-                    'user_id': hr_event.employee_id,
+                    "user_id": hr_event.employee_id,
                     param_key: entitlement.resource_name,
-                    'resource_name': entitlement.resource_name
-                }
+                    "resource_name": entitlement.resource_name,
+                },
             )
 
             self.steps.append(step)
@@ -190,10 +202,12 @@ class MoverWorkflow(BaseWorkflow):
                 action=operation,
                 resource=entitlement.resource_name,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
-    def _execute_addition_steps(self, hr_event: HREvent, entitlements_to_add: List[AccessEntitlement]):
+    def _execute_addition_steps(
+        self, hr_event: HREvent, entitlements_to_add: List[AccessEntitlement]
+    ):
         """
         Execute steps to add new entitlements.
 
@@ -205,17 +219,17 @@ class MoverWorkflow(BaseWorkflow):
             operation = self._get_addition_operation(entitlement.resource_type)
 
             # Determine parameter key based on operation
-            param_key = 'role_name' if 'role' in operation else 'group_name'
+            param_key = "role_name" if "role" in operation else "group_name"
 
             step = WorkflowStep(
                 system=entitlement.system,
                 operation=operation,
                 resource=entitlement.resource_name,
                 parameters={
-                    'user_id': hr_event.employee_id,
+                    "user_id": hr_event.employee_id,
                     param_key: entitlement.resource_name,
-                    'resource_name': entitlement.resource_name
-                }
+                    "resource_name": entitlement.resource_name,
+                },
             )
 
             self.steps.append(step)
@@ -229,7 +243,7 @@ class MoverWorkflow(BaseWorkflow):
                 action=operation,
                 resource=entitlement.resource_name,
                 success=success,
-                error=step.error if not success else None
+                error=step.error if not success else None,
             )
 
     def _get_removal_operation(self, resource_type: str) -> str:
@@ -243,12 +257,12 @@ class MoverWorkflow(BaseWorkflow):
             Operation name for removal
         """
         operation_map = {
-            'role': 'revoke_role',
-            'group': 'remove_from_group',
-            'team': 'remove_from_group',  # Teams are treated as groups
-            'channel': 'remove_from_group'  # Channels are treated as groups
+            "role": "revoke_role",
+            "group": "remove_from_group",
+            "team": "remove_from_group",  # Teams are treated as groups
+            "channel": "remove_from_group",  # Channels are treated as groups
         }
-        return operation_map.get(resource_type, 'revoke_role')
+        return operation_map.get(resource_type, "revoke_role")
 
     def _get_addition_operation(self, resource_type: str) -> str:
         """
@@ -261,9 +275,9 @@ class MoverWorkflow(BaseWorkflow):
             Operation name for addition
         """
         operation_map = {
-            'role': 'grant_role',
-            'group': 'add_to_group',
-            'team': 'add_to_group',  # Teams are treated as groups
-            'channel': 'add_to_group'  # Channels are treated as groups
+            "role": "grant_role",
+            "group": "add_to_group",
+            "team": "add_to_group",  # Teams are treated as groups
+            "channel": "add_to_group",  # Channels are treated as groups
         }
-        return operation_map.get(resource_type, 'grant_role')
+        return operation_map.get(resource_type, "grant_role")

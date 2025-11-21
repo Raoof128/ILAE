@@ -50,7 +50,7 @@ class PolicyMapper:
             # Load access matrix
             matrix_file = self.config_dir / "access_matrix.yaml"
             if matrix_file.exists():
-                with open(matrix_file, encoding='utf-8') as f:
+                with open(matrix_file, encoding="utf-8") as f:
                     self.access_matrix = yaml.safe_load(f)
                 logger.info(f"Loaded access matrix from {matrix_file}")
             else:
@@ -59,7 +59,7 @@ class PolicyMapper:
             # Load role mappings
             mappings_file = self.config_dir / "role_mappings.yaml"
             if mappings_file.exists():
-                with open(mappings_file, encoding='utf-8') as f:
+                with open(mappings_file, encoding="utf-8") as f:
                     self.role_mappings = yaml.safe_load(f)
                 logger.info(f"Loaded role mappings from {mappings_file}")
             else:
@@ -69,8 +69,9 @@ class PolicyMapper:
             logger.error(f"Failed to load policy configurations: {e}")
             raise
 
-    def get_access_profile(self, department: str, title: Optional[str] = None,
-                          contract_type: str = "PERMANENT") -> AccessProfile:
+    def get_access_profile(
+        self, department: str, title: Optional[str] = None, contract_type: str = "PERMANENT"
+    ) -> AccessProfile:
         """
         Get the access profile for a given department and title combination.
 
@@ -82,7 +83,9 @@ class PolicyMapper:
         Returns:
             AccessProfile with entitlements for the user
         """
-        logger.debug(f"Resolving access profile for dept='{department}', title='{title}', contract='{contract_type}'")
+        logger.debug(
+            f"Resolving access profile for dept='{department}', title='{title}', contract='{contract_type}'"
+        )
 
         # Start with default access
         profile = self._get_default_access()
@@ -108,9 +111,11 @@ class PolicyMapper:
         profile.title = title
         profile.description = f"Access profile for {title or 'Employee'} in {department}"
 
-        logger.debug(f"Resolved profile with {len(profile.aws_roles)} AWS roles, "
-                    f"{len(profile.azure_groups)} Azure groups, "
-                    f"{len(profile.github_teams)} GitHub teams")
+        logger.debug(
+            f"Resolved profile with {len(profile.aws_roles)} AWS roles, "
+            f"{len(profile.azure_groups)} Azure groups, "
+            f"{len(profile.github_teams)} GitHub teams"
+        )
 
         return profile
 
@@ -125,9 +130,7 @@ class PolicyMapper:
             AccessProfile for the user
         """
         return self.get_access_profile(
-            department=event.department,
-            title=event.title,
-            contract_type=event.contract_type
+            department=event.department, title=event.title, contract_type=event.contract_type
         )
 
     def _get_default_access(self) -> AccessProfile:
@@ -141,7 +144,7 @@ class PolicyMapper:
             github_teams=default_config.get("github_teams", []),
             google_groups=default_config.get("google_groups", []),
             slack_channels=default_config.get("slack_channels", []),
-            description="Default employee access"
+            description="Default employee access",
         )
 
     def _get_department_access(self, department: str) -> Optional[AccessProfile]:
@@ -159,7 +162,7 @@ class PolicyMapper:
             github_teams=dept_config.get("github_teams", []),
             google_groups=dept_config.get("google_groups", []),
             slack_channels=dept_config.get("slack_channels", []),
-            description=dept_config.get("description", f"{department} department access")
+            description=dept_config.get("description", f"{department} department access"),
         )
 
     def _get_contract_override(self, contract_type: str) -> Optional[AccessProfile]:
@@ -173,7 +176,7 @@ class PolicyMapper:
                 github_teams=contractor_config.get("github_teams", []),
                 google_groups=contractor_config.get("google_groups", []),
                 slack_channels=contractor_config.get("slack_channels", []),
-                description="Contractor access profile"
+                description="Contractor access profile",
             )
 
         # Check for intern access (inferred from title usually, but can be contract type)
@@ -186,7 +189,7 @@ class PolicyMapper:
                 github_teams=intern_config.get("github_teams", []),
                 google_groups=intern_config.get("google_groups", []),
                 slack_channels=intern_config.get("slack_channels", []),
-                description="Intern access profile"
+                description="Intern access profile",
             )
 
         return None
@@ -213,7 +216,7 @@ class PolicyMapper:
                             github_teams=override_config.get("github_teams", []),
                             google_groups=override_config.get("google_groups", []),
                             slack_channels=override_config.get("slack_channels", []),
-                            description=f"Override profile for {title}"
+                            description=f"Override profile for {title}",
                         )
 
                 # Build additional access
@@ -224,7 +227,7 @@ class PolicyMapper:
                     github_teams=mapping.get("additional_github_teams", []),
                     google_groups=mapping.get("additional_google_groups", []),
                     slack_channels=mapping.get("additional_slack_channels", []),
-                    description=f"Additional access for {title}"
+                    description=f"Additional access for {title}",
                 )
 
                 return additional_access
@@ -240,7 +243,7 @@ class PolicyMapper:
                 github_teams=custom_config.get("additional_github_teams", []),
                 google_groups=custom_config.get("additional_google_groups", []),
                 slack_channels=custom_config.get("additional_slack_channels", []),
-                description=f"Custom profile for {title}"
+                description=f"Custom profile for {title}",
             )
 
         return None
@@ -264,7 +267,7 @@ class PolicyMapper:
             github_teams=list(set(base.github_teams + additional.github_teams)),
             google_groups=list(set(base.google_groups + additional.google_groups)),
             slack_channels=list(set(base.slack_channels + additional.slack_channels)),
-            description=f"{base.description} + {additional.description}"
+            description=f"{base.description} + {additional.description}",
         )
 
     def get_all_departments(self) -> List[str]:

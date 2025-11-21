@@ -23,7 +23,13 @@ logger = logging.getLogger(__name__)
 class WorkflowStep:
     """Represents a single step in a workflow execution."""
 
-    def __init__(self, system: str, operation: str, resource: str = "", parameters: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        system: str,
+        operation: str,
+        resource: str = "",
+        parameters: Optional[Dict[str, Any]] = None,
+    ):
         self.system = system
         self.operation = operation
         self.resource = resource
@@ -55,7 +61,7 @@ class WorkflowStep:
             "executed_at": self.executed_at.isoformat() if self.executed_at else None,
             "success": self.success,
             "error": self.error,
-            "result": self.result
+            "result": self.result,
         }
 
 
@@ -83,8 +89,8 @@ class BaseWorkflow(ABC):
 
         # Initialize components
         self.policy_mapper = PolicyMapper()
-        self.state_manager = StateManager(self.config.get('state_file'))
-        self.audit_logger = AuditLogger(self.config.get('audit_dir', 'audit'))
+        self.state_manager = StateManager(self.config.get("state_file"))
+        self.audit_logger = AuditLogger(self.config.get("audit_dir", "audit"))
 
         # Initialize connectors
         self.connectors = self._initialize_connectors()
@@ -93,16 +99,13 @@ class BaseWorkflow(ABC):
 
     def _initialize_connectors(self) -> Dict[str, Any]:
         """Initialize all system connectors."""
-        connectors_config = self.config.get('connectors', {})
+        connectors_config = self.config.get("connectors", {})
 
         connectors = {}
-        mock_mode = self.config.get('mock_mode', True)
-        for system in ['aws', 'azure', 'github', 'google', 'slack']:
+        mock_mode = self.config.get("mock_mode", True)
+        for system in ["aws", "azure", "github", "google", "slack"]:
             connector_class = _get_connector_class(system, mock=mock_mode)
-            connectors[system] = connector_class(
-                connectors_config.get(system),
-                mock_mode=mock_mode
-            )
+            connectors[system] = connector_class(connectors_config.get(system), mock_mode=mock_mode)
 
         return connectors
 
@@ -156,7 +159,9 @@ class BaseWorkflow(ABC):
             logger.error(error_msg)
             return False
 
-    def _call_connector_method(self, connector: Any, operation: str, params: Dict[str, Any]) -> ConnectorResult:
+    def _call_connector_method(
+        self, connector: Any, operation: str, params: Dict[str, Any]
+    ) -> ConnectorResult:
         """
         Call the appropriate connector method based on operation name.
 
@@ -169,12 +174,12 @@ class BaseWorkflow(ABC):
             ConnectorResult from the operation
         """
         method_map = {
-            'create_user': lambda c, p: c.create_user(p['user']),
-            'delete_user': lambda c, p: c.delete_user(p['user_id']),
-            'add_to_group': lambda c, p: c.add_to_group(p['user_id'], p['group_name']),
-            'remove_from_group': lambda c, p: c.remove_from_group(p['user_id'], p['group_name']),
-            'grant_role': lambda c, p: c.grant_role(p['user_id'], p['role_name']),
-            'revoke_role': lambda c, p: c.revoke_role(p['user_id'], p['role_name']),
+            "create_user": lambda c, p: c.create_user(p["user"]),
+            "delete_user": lambda c, p: c.delete_user(p["user_id"]),
+            "add_to_group": lambda c, p: c.add_to_group(p["user_id"], p["group_name"]),
+            "remove_from_group": lambda c, p: c.remove_from_group(p["user_id"], p["group_name"]),
+            "grant_role": lambda c, p: c.grant_role(p["user_id"], p["role_name"]),
+            "revoke_role": lambda c, p: c.revoke_role(p["user_id"], p["role_name"]),
         }
 
         if operation not in method_map:
@@ -217,7 +222,7 @@ class BaseWorkflow(ABC):
         # Helper function to safely iterate over profile attributes
         def safe_iterate(attr_value):
             """Safely iterate over an attribute that might be a Mock object."""
-            if hasattr(attr_value, '__iter__') and not isinstance(attr_value, (str, bytes)):
+            if hasattr(attr_value, "__iter__") and not isinstance(attr_value, (str, bytes)):
                 try:
                     return list(attr_value)
                 except (TypeError, AttributeError):
@@ -226,53 +231,72 @@ class BaseWorkflow(ABC):
 
         # AWS roles
         for role in safe_iterate(profile.aws_roles):
-            entitlements.append(AccessEntitlement(
-                system="aws",
-                resource_type="role",
-                resource_name=role,
-                permission_level="assume"
-            ))
+            entitlements.append(
+                AccessEntitlement(
+                    system="aws",
+                    resource_type="role",
+                    resource_name=role,
+                    permission_level="assume",
+                )
+            )
 
         # Azure groups
         for group in safe_iterate(profile.azure_groups):
-            entitlements.append(AccessEntitlement(
-                system="azure",
-                resource_type="group",
-                resource_name=group,
-                permission_level="member"
-            ))
+            entitlements.append(
+                AccessEntitlement(
+                    system="azure",
+                    resource_type="group",
+                    resource_name=group,
+                    permission_level="member",
+                )
+            )
 
         # GitHub teams
         for team in safe_iterate(profile.github_teams):
-            entitlements.append(AccessEntitlement(
-                system="github",
-                resource_type="team",
-                resource_name=team,
-                permission_level="member"
-            ))
+            entitlements.append(
+                AccessEntitlement(
+                    system="github",
+                    resource_type="team",
+                    resource_name=team,
+                    permission_level="member",
+                )
+            )
 
         # Google groups
         for group in safe_iterate(profile.google_groups):
-            entitlements.append(AccessEntitlement(
-                system="google",
-                resource_type="group",
-                resource_name=group,
-                permission_level="member"
-            ))
+            entitlements.append(
+                AccessEntitlement(
+                    system="google",
+                    resource_type="group",
+                    resource_name=group,
+                    permission_level="member",
+                )
+            )
 
         # Slack channels
         for channel in safe_iterate(profile.slack_channels):
-            entitlements.append(AccessEntitlement(
-                system="slack",
-                resource_type="channel",
-                resource_name=channel,
-                permission_level="member"
-            ))
+            entitlements.append(
+                AccessEntitlement(
+                    system="slack",
+                    resource_type="channel",
+                    resource_name=channel,
+                    permission_level="member",
+                )
+            )
 
         return entitlements
 
-    def _log_audit_event(self, employee_id: str, user_email: str, event_type: str, system: str,
-                        action: str, resource: str, success: bool, error: Optional[str] = None) -> str:
+    def _log_audit_event(
+        self,
+        employee_id: str,
+        user_email: str,
+        event_type: str,
+        system: str,
+        action: str,
+        resource: str,
+        success: bool,
+        error: Optional[str] = None,
+    ) -> str:
         """
         Log an audit event.
 
@@ -298,7 +322,7 @@ class BaseWorkflow(ABC):
             resource=resource,
             success=success,
             error_message=error,
-            workflow_id=self.workflow_id
+            workflow_id=self.workflow_id,
         )
 
         self.audit_logger.log_event(audit_record)
@@ -317,5 +341,5 @@ class BaseWorkflow(ABC):
             "total_steps": total_steps,
             "successful_steps": successful_steps,
             "failed_steps": total_steps - successful_steps,
-            "errors": self.errors.copy()
+            "errors": self.errors.copy(),
         }

@@ -41,7 +41,7 @@ class TestHREventProcessing:
                 email="alice.johnson@company.com",
                 department="Engineering",
                 title="Software Engineer",
-                source_system="Workday"
+                source_system="Workday",
             ),
             HREvent(
                 event=LifecycleEvent.ROLE_CHANGE,
@@ -52,8 +52,8 @@ class TestHREventProcessing:
                 title="Senior Engineer",
                 previous_department="Engineering",
                 previous_title="Engineer",
-                source_system="BambooHR"
-            )
+                source_system="BambooHR",
+            ),
         ]
 
     def test_hr_event_ingestion_pipeline(self, sample_hr_events, temp_dir):
@@ -62,7 +62,7 @@ class TestHREventProcessing:
 
         # Test JSON ingestion
         for event in sample_hr_events:
-            event_dict = event.model_dump(mode='json')
+            event_dict = event.model_dump(mode="json")
             ingested_events = listener.ingest_event(event_dict)
 
             assert len(ingested_events) == 1
@@ -104,10 +104,10 @@ class TestWorkflowExecution:
                 "azure": {},
                 "github": {"organization": "test-org"},
                 "google": {"domain": "test.com"},
-                "slack": {"workspace_id": "T123456"}
+                "slack": {"workspace_id": "T123456"},
             },
             "audit_dir": "/tmp/audit",
-            "state_file": "/tmp/state.json"
+            "state_file": "/tmp/state.json",
         }
 
     def test_joiner_workflow_integration(self, mock_config):
@@ -119,16 +119,15 @@ class TestWorkflowExecution:
             email="workflow.test@company.com",
             department="Engineering",
             title="Engineer",
-            source_system="IntegrationTest"
+            source_system="IntegrationTest",
         )
 
         workflow = JoinerWorkflow(mock_config)
 
         # Mock all the components
-        with patch.object(workflow, 'policy_mapper') as mock_pm, \
-             patch.object(workflow, 'state_manager') as mock_sm, \
-             patch.object(workflow, 'audit_logger') as mock_al:
-
+        with patch.object(workflow, "policy_mapper") as mock_pm, patch.object(
+            workflow, "state_manager"
+        ) as mock_sm, patch.object(workflow, "audit_logger") as mock_al:
             # Setup mocks
             mock_profile = MagicMock()
             mock_profile.aws_roles = ["ReadOnlyAccess"]
@@ -144,11 +143,11 @@ class TestWorkflowExecution:
 
             # Mock connectors
             workflow.connectors = {
-                'aws': MagicMock(),
-                'azure': MagicMock(),
-                'github': MagicMock(),
-                'google': MagicMock(),
-                'slack': MagicMock()
+                "aws": MagicMock(),
+                "azure": MagicMock(),
+                "github": MagicMock(),
+                "google": MagicMock(),
+                "slack": MagicMock(),
             }
 
             for connector in workflow.connectors.values():
@@ -179,6 +178,7 @@ class TestAPIIntegration:
     def client(self):
         """Test client for the FastAPI application."""
         from jml_engine.api.server import app
+
         with TestClient(app) as client:
             yield client
 
@@ -200,7 +200,7 @@ class TestAPIIntegration:
             "name": "API Test User",
             "email": "api.test@company.com",
             "department": "Engineering",
-            "title": "Engineer"
+            "title": "Engineer",
         }
 
         response = client.post("/event/hr", json=hr_event_data)
@@ -259,7 +259,7 @@ class TestAuditCompliance:
             action="create_user",
             resource="user_account",
             success=True,
-            evidence_path=evidence_id
+            evidence_path=evidence_id,
         )
 
         # Log the event
@@ -280,10 +280,7 @@ class TestAuditCompliance:
 
         store = EvidenceStore(str(temp_audit_dir))
 
-        evidence_data = {
-            "test": "data",
-            "integrity_check": True
-        }
+        evidence_data = {"test": "data", "integrity_check": True}
 
         evidence_id = store.store_evidence(evidence_data)
 
@@ -310,7 +307,7 @@ class TestAuditCompliance:
                 system="aws",
                 action="create_user",
                 resource=f"user_{i}",
-                success=(i != 2)  # Make one failure
+                success=(i != 2),  # Make one failure
             )
             audit_logger.log_event(record)
 
@@ -318,9 +315,7 @@ class TestAuditCompliance:
         start_date = base_time - timedelta(days=1)
         end_date = base_time + timedelta(hours=1)
 
-        report = audit_logger.generate_compliance_report(
-            start_date, end_date, ["ISO_27001"]
-        )
+        report = audit_logger.generate_compliance_report(start_date, end_date, ["ISO_27001"])
 
         assert report["summary"]["total_events"] == 3
         assert report["summary"]["successful_operations"] == 2
@@ -335,7 +330,7 @@ class TestStateManagement:
     @pytest.fixture
     def temp_state_file(self):
         """Create temporary state file."""
-        with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as f:
             f.write('{"identities": {}, "last_updated": "2024-01-01T00:00:00"}')
             temp_file = f.name
 
@@ -358,7 +353,7 @@ class TestStateManagement:
             email="state.test@company.com",
             department="Engineering",
             title="Engineer",
-            source_system="TEST"
+            source_system="TEST",
         )
 
         identity = state_mgr.create_or_update_identity(hr_event)
